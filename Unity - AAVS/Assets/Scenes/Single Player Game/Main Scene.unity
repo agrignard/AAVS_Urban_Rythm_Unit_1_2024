@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.17267816, g: 0.21577376, b: 0.2976624, a: 1}
+  m_IndirectSpecularColor: {r: 0.17276788, g: 0.21589147, b: 0.29782534, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -372,7 +372,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8634172197249583167, guid: bf84c149438c7424e846384d10cade5b, type: 3}
       propertyPath: DefaultIP
-      value: 10.0.66.76
+      value: localhost
       objectReference: {fileID: 0}
     - target: {fileID: 8634172197249583167, guid: bf84c149438c7424e846384d10cade5b, type: 3}
       propertyPath: DesktopMode
