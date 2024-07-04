@@ -22,8 +22,8 @@ species unity_linker parent: abstract_unity_linker {
 		do add_background_geometries(building,up_road);
 	}
 	action define_properties {
-		unity_aspect road_aspect <- geometry_aspect(0.01,#gray,precision);
-		up_road <- geometry_properties("road","",road_aspect,#ray_interactable,false);
+		unity_aspect road_aspect <- geometry_aspect(0.5,#black,precision);
+		up_road <- geometry_properties("road","",road_aspect,#no_interaction,false);
 		unity_properties << up_road;
 
 
