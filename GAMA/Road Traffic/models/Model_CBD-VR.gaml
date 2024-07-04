@@ -12,7 +12,7 @@ species unity_linker parent: abstract_unity_linker {
 	list<point> init_locations <- define_init_locations();
 
 	list<point> define_init_locations {
-		return [{1000.0,1000.0,100.0}];
+		return [any_location_in(one_of(road))];
 	}
 
 
@@ -22,12 +22,12 @@ species unity_linker parent: abstract_unity_linker {
 		do add_background_geometries(building,up_road);
 	}
 	action define_properties {
-		unity_aspect road_aspect <- geometry_aspect(1.0,#gray,precision);
+		unity_aspect road_aspect <- geometry_aspect(0.01,#gray,precision);
 		up_road <- geometry_properties("road","",road_aspect,#ray_interactable,false);
 		unity_properties << up_road;
 
 
-		unity_aspect building_aspect <- geometry_aspect(1.0,#gray,precision);
+		unity_aspect building_aspect <- geometry_aspect(10.0,#gray,precision);
 		up_building <- geometry_properties("building","",building_aspect,#no_interaction,false);
 		unity_properties << up_building;
 
