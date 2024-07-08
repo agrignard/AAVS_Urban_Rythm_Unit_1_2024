@@ -18,6 +18,8 @@ global{
 	file cbd_transport_pedestrian <- file("../includes/GIS/cbd_pedestrian_network_custom.shp");
 	file cbd_trees <- file("../includes/GIS/cbd_trees.shp");
 	file cbd_green <- file("../includes/GIS/cbd_green.shp");
+	file cbd_wind_avgspeed <- file("../includes/GIS/microclimate/Wind/wind_avgspeed.shp");
+	file cbd_wind_direction <- file("../includes/GIS/microclimate/Wind/wind_directionanchors.shp");
 	geometry shape <- envelope(shape_file_bounds);
 	
 	bool show_building<-true;
@@ -26,6 +28,8 @@ global{
 	bool show_green<-true;
 	bool show_water<-true;
 	bool show_fox<-true;
+	bool show_wind_avgspeed<-true;
+	bool show_wind_avgdirection<-true;
 	
 	init{
 		create border from: shape_file_bounds ;
@@ -33,7 +37,9 @@ global{
 		create water from: cbd_water_flow;
 		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;
 		create trees from: cbd_trees ;
-		create green from:cbd_green;
+		create green from: cbd_green ;
+		create wind_avgspeed from: cbd_wind_avgspeed with: [type::string(read ("WSPEED_MSC"))] ;
+		create wind_avgdirection from: cbd_wind_direction;
 		create wastewater from: cbd_buildings;
 		create fox number:100;
 		create bird number:100{
@@ -44,7 +50,6 @@ global{
 	}
 	
 }
-
 species border {
 	aspect base {
 		draw shape color:#blue width:2 wireframe:true;
@@ -62,13 +67,11 @@ species building {
 		draw shape color:color;
 	}
 }
-
 species water {
 	aspect base {
 		draw shape color:#blue width:2;	
     }
 }
-
 species heritage_building {
 	string type;
 	int mydepth;
@@ -85,7 +88,6 @@ species trees {
 		draw sphere(3) color:#green;
 	}
 }
-
 species green{
 	aspect base {
 		draw shape color:#green;
@@ -96,10 +98,7 @@ species wastewater{
 		draw circle(2) color:#red ;
 	}
 }
-
-
 species fox skills:[moving]{
-	
 	aspect base{
 		draw triangle(5) rotate:heading+90 color:#brown;
 	}
@@ -107,7 +106,6 @@ species fox skills:[moving]{
 		do wander speed:1.0;
 	}
 }
-
 species bird skills:[moving]{
 	green my_home;
 	
@@ -116,6 +114,37 @@ species bird skills:[moving]{
 	}
 	aspect base{
 		draw triangle(5) rotate:heading+90 color:#white;
+	}
+}
+species wind_avgspeed {
+	string type;
+	int mydepth;
+	
+	aspect base {
+		if (type="0 - 0.1"){
+			color<-#black;
+			}
+		if (type="5.3 - 5.4"){
+			color<-#green;
+			}
+		if (type="5.4 - 5.5"){
+			color<-#blue;
+			}
+		if (type="5.5 - 5.6"){
+			color<-#orange;
+			}
+		if (type="5.6 - 5.7"){
+			color<-#white;
+			}
+			draw shape color:color;
+	}
+}
+species wind_avgdirection {
+	string type;
+	int mydepth;
+		
+	aspect base {
+		draw shape color:#purple width:0;		
 	}
 }
 
@@ -131,6 +160,8 @@ experiment life type: gui {
 			//species wastewater aspect:base;
 			species fox aspect:base  visible:show_fox;
 			species bird aspect:base  visible:show_fox;
+			species wind_avgspeed aspect:base visible:show_wind_avgspeed;
+			species wind_avgdirection aspect:base visible:show_wind_avgspeed;
 			
 			event "b"  {show_building<-!show_building;}
 			event "h"  {show_heritage<-!show_heritage;}
@@ -138,6 +169,7 @@ experiment life type: gui {
 			event "w"  {show_water<-!show_water;}
 			event "f"  {show_fox<-!show_fox;}
 			event "g"  {show_green<-!show_green;}
+			event "q"  {show_wind_avgspeed<-!show_wind_avgspeed;}
 		}
 	}
 }
