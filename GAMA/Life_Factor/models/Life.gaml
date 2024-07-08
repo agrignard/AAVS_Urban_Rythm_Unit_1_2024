@@ -11,8 +11,9 @@ model Life
 /* Insert your model definition here */
 
 global{
+	//Shapefiles from GIS
 	file shape_file_bounds <- file("../includes/GIS/cbd_border.shp");
-	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");
+	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");	
 	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
 	file cbd_buildings_heritage <- file("../includes/GIS/cbd_buildings_heritage.shp");
 	file cbd_transport_pedestrian <- file("../includes/GIS/cbd_pedestrian_network_custom.shp");
@@ -20,8 +21,22 @@ global{
 	file cbd_green <- file("../includes/GIS/cbd_green.shp");
 	file cbd_wind_avgspeed <- file("../includes/GIS/microclimate/Wind/wind_avgspeed.shp");
 	file cbd_wind_direction <- file("../includes/GIS/microclimate/Wind/wind_directionanchors.shp");
-	geometry shape <- envelope(shape_file_bounds);
 	
+	//Shape of the environment
+	geometry shape <- envelope(cbd_buildings);
+	int maximal_turn <- 90; //in degree
+	int cohesion_factor <- 10;
+	
+	//Size of the windparticles
+	float windparticle_size <- 2.0;
+	//Space without buildings
+	geometry free_space;
+	//Number of windparticle agent
+	int nb_windparticle <- 100;
+	//Point to die
+	point target_point <- {shape.width, 0};
+	
+	//Interaction interface
 	bool show_building<-true;
 	bool show_heritage<-true;
 	bool show_tree<-true;
@@ -40,6 +55,21 @@ global{
 		create green from: cbd_green ;
 		create wind_avgspeed from: cbd_wind_avgspeed with: [type::string(read ("WSPEED_MSC"))] ;
 		create wind_avgdirection from: cbd_wind_direction;
+		
+		free_space <- copy(shape);
+		//Creation of the buildinds
+		create building from: cbd_buildings with: [type::string(read ("footprin_1"))] {
+			//Creation of the free space by removing the shape of the different buildings existing
+			free_space <- free_space - (shape + windparticle_size);
+		}
+		//Simplification of the free_space to remove sharp edges
+		free_space <- free_space simplification(1.0);
+		//Creation of the windparticle agents
+		create windparticle number: nb_windparticle {
+			//windparticle agents are placed randomly among the free space
+			location <- any_location_in(free_space);
+			target_loc <-  target_point;
+		} 		 	
 		create wastewater from: cbd_buildings;
 		create fox number:100;
 		create bird number:100{
@@ -48,8 +78,8 @@ global{
 			my_home<-tmp_green;
 		}
 	}
-	
 }
+	
 species border {
 	aspect base {
 		draw shape color:#blue width:2 wireframe:true;
@@ -147,7 +177,50 @@ species wind_avgdirection {
 		draw shape color:#purple width:0;		
 	}
 }
+species windparticle skills:[moving] {
+	point target_loc;
+	float speed <- 0.5 + rnd(1000) / 1000;
+	point velocity <- {0,0};
+	float heading max: heading + maximal_turn min: heading - maximal_turn;
+	float size <- windparticle_size; 
+	rgb color <- rgb(rnd(255),rnd(255),rnd(255));
+	reflex end when: location distance_to target_loc <= 2 * windparticle_size{
+		write name + " is arrived";
+		do die;
+		}
+	reflex follow_goal  {
+		velocity <- velocity + ((target_loc - location) / cohesion_factor);
+	}
+	reflex separation {
+		point acc <- {0,0};
+		ask (windparticle at_distance size)  {
+			acc <- acc - (location - myself.location);
+		}  
+		velocity <- velocity + acc;
+	}
+	reflex avoid { 
+		point acc <- {0,0};
+		list<building> nearby_obstacles <- (building at_distance windparticle_size);
+		loop obs over: nearby_obstacles {
+			acc <- acc - (obs.location - location); 
+		}
+		velocity <- velocity + acc; 
+	}
+	reflex move {
+		point old_location <- copy(location);
+		do goto target: location + velocity ;
+		if not(self overlaps free_space ) {
+			location <- ((location closest_points_with free_space)[1]);
+		}
+		velocity <- location - old_location;
+	}
+	aspect default {
+		draw pyramid(size) color: color;
+		draw sphere(size/3) at: {location.x,location.y,size*0.75} color: color;
+	}
+}
 
+//Experiment GUI
 experiment life type: gui {		
 	output synchronized:true{
 		display city_display type:3d {
@@ -170,6 +243,19 @@ experiment life type: gui {
 			event "f"  {show_fox<-!show_fox;}
 			event "g"  {show_green<-!show_green;}
 			event "q"  {show_wind_avgspeed<-!show_wind_avgspeed;}
+		}
+	}
+	
+	
+	parameter "nb windparticle" var: nb_windparticle min: 1 max: 1000;
+	float minimum_cycle_duration <- 0.04; 
+	output {
+		display map type: 3d {
+			species building refresh: false;
+			species windparticle;
+			graphics "exit" refresh: false {
+				draw sphere(2 * windparticle_size) at: target_point color: #green;	
+			}
 		}
 	}
 }
