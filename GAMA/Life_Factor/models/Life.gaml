@@ -28,7 +28,8 @@ global{
 	 //Microclimate_wind
 	file cbd_wind_avgspeed <- file("../includes/GIS/microclimate/Wind/wind_avgspeed.shp");
 	file cbd_wind_direction <- file("../includes/GIS/microclimate/Wind/wind_directionanchors.shp");
-	file cbd_windparticle <- file ("../includes/GIS/microclimate/Wind/wind_startpoint.shp");	
+	file cbd_windparticle <- file ("../includes/GIS/microclimate/Wind/wind_startpoint.shp");
+	file cbd_wind_bounds <- file ("../includes/GIS/microclimate/Wind/wind_startboundary.shp");	
 	
 	 //Microclimate_water
 	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
