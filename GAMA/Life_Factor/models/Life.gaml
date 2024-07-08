@@ -13,12 +13,16 @@ model Life
 global{
 	file shape_file_bounds <- file("../includes/GIS/cbd_border.shp");
 	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");
+
 	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
 	file cbd_buildings_heritage <- file("../includes/GIS/cbd_buildings_heritage.shp");
 	file cbd_transport_pedestrian <- file("../includes/GIS/cbd_pedestrian_network_custom.shp");
 	file cbd_trees <- file("../includes/GIS/cbd_trees.shp");
 	
 	geometry shape <- envelope(shape_file_bounds);
+	
+	int location_x_shift <- 5;
+	int location_y_shift <- 50;
 	init{
 		create border from: shape_file_bounds ;
 		create building from: cbd_buildings with: [type::string(read ("predominan"))] ;
@@ -26,9 +30,10 @@ global{
 		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;
 		create trees from: cbd_trees ;
 		create wastewater from: cbd_buildings;
-
-	}
-	
+		create shadow from:cbd_buildings{
+			location<-{location.x+location_x_shift,location.y+location_y_shift};
+		}	
+		}	
 }
 
 species border {
@@ -48,6 +53,7 @@ species building {
 		draw shape color:color;
 	}
 }
+
 
 species water {
 	aspect base {
@@ -77,6 +83,15 @@ species wastewater{
 	}
 }
 
+species shadow {
+	string type;
+	rgb color <- #pink;
+	
+	aspect base {
+		draw shape color:color;
+	}	
+}
+
 experiment life type: gui {		
 	output {
 		display city_display type:3d {
@@ -86,6 +101,7 @@ experiment life type: gui {
 			species heritage_building aspect:base ;
 			species trees aspect:base;
 			species wastewater aspect:base;
+			species shadow aspect:base;
 		}
 	}
 }
