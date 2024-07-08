@@ -14,13 +14,24 @@ global{
 	//Shapefiles from GIS
 	file shape_file_bounds <- file("../includes/GIS/cbd_border.shp");
 	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");	
-	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
 	file cbd_buildings_heritage <- file("../includes/GIS/cbd_buildings_heritage.shp");
 	file cbd_transport_pedestrian <- file("../includes/GIS/cbd_pedestrian_network_custom.shp");
 	file cbd_trees <- file("../includes/GIS/cbd_trees.shp");
 	file cbd_green <- file("../includes/GIS/cbd_green.shp");
+	
+	 //Biodiversity
+	file cbd_bird_migration <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_migration.shp");
+	file cbd_bird_start <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_entrancepoint.shp");
+	file cbd_fox_migration <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_fox_migrationroute.shp");
+	file cbd_fox_start <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_fox_migration.shp");
+	
+	 //Microclimate_wind
 	file cbd_wind_avgspeed <- file("../includes/GIS/microclimate/Wind/wind_avgspeed.shp");
 	file cbd_wind_direction <- file("../includes/GIS/microclimate/Wind/wind_directionanchors.shp");
+	file cbd_windparticle <- file ("../includes/GIS/microclimate/Wind/wind_startpoint.shp");	
+	
+	 //Microclimate_water
+	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
 	
 	//Shape of the environment
 	geometry shape <- envelope(cbd_buildings);
@@ -34,7 +45,7 @@ global{
 	//Number of windparticle agent
 	int nb_windparticle <- 100;
 	//Point to die
-	point target_point <- {shape.width, 0};
+	point target_point <- {shape.height, 0};
 	
 	//Interaction interface
 	bool show_building<-true;
@@ -91,10 +102,38 @@ species building {
 	int mydepth;
 		
 	aspect base {
-		if (type="Commercial Accommodation"){
+		if (type="Commercial Accommodation"or"Institutional Accommodation"or"Student Accommodation"){
+			color<-#black;
+			}
+		if (type="Community Use"){
+			color<-#green;
+			}
+		if (type="Educational/Research"){
 			color<-#blue;
-		}
-		draw shape color:color;
+			}
+		if (type="Entertainment/Recreation - Indoor"or"Performances, Conferences, Ceremonies"){
+			color<-#orange;
+			}
+		if (type="Hospital/Clinic"){
+			color<-#white;
+			}
+		if (type="House/Townhouse"or"Residential Apartment"){
+			color<-#white;
+			}
+		if (type="Retail - Shop"or"Retail - Showroom"or"Wholesale"){
+			color<-#white;
+			}
+		if (type="Office"or"Workshop/Studio"){
+			color<-#white;
+			}
+		if (type="Parking - Commercial Covered"or"Parking - Private Covered"){
+			color<-#white;
+			}
+		if (type="Transport"){
+			color<-#white;
+			}
+		
+			draw shape color:color;
 	}
 }
 species water {
