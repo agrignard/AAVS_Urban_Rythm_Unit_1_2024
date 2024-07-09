@@ -23,29 +23,16 @@ global{
 
 	graph the_channel;
 	
-	bool show_landuse<-false;
-	bool show_heritage<-false;
-	bool show_tree<-false;
-	bool show_green<-false;
+	bool show_building<-true;
+	bool show_water_channel<-true;
+	bool show_poi<-true;
 	bool show_water<-true;
-	bool show_fox<-false;
-	bool show_bird<-false;
-	bool show_wastewater<-true;
-	
+
 	init{
 		create border from: shape_file_bounds ;
 		create building from: cbd_buildings with: [type::string(read ("predominan"))] ;
-		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;
-		create trees from: cbd_trees ;
-		create green from:cbd_green;
 		create waste_water_channel from: cbd_water_channel;
 		create poi from: cbd_poi_file;
-		create fox number:100;
-		create bird number:100{
-			green tmp_green<-one_of(green);
-			location<-any_location_in(one_of(tmp_green));
-			my_home<-tmp_green;
-		}
 		the_channel <- as_edge_graph(waste_water_channel);
 	}
 	
@@ -96,80 +83,35 @@ species poi {
 	int river_id;
 	
 	aspect base{
-		draw circle(10) color: (type="source") ? #grey : #red /*border: #black*/;		
+		draw circle(10) color: (type="source") ? #grey : #red border: #black;		
 	}	
 }
-species heritage_building {
-	string type;
-	int mydepth;
-		
-	aspect base {
-		if (type="N"){
-			color<-#black;
-		}
-		draw shape color:color;		
-	}
-}
-species trees {
-	aspect base {
-		draw sphere(3) color:#green;
-	}
-}
 
-species green{
-	aspect base {
-		draw shape color:#green;
-	}
-}
+
+
 species waste_water_channel{
 	aspect base {
-		draw shape width:1 color: #grey;		
+		draw shape width:1 color: #darkblue;		
 	}
 }
 
 
-species fox skills:[moving]{
-	
-	aspect base{
-		draw triangle(5) rotate:heading+90 color:#brown;
-	}
-	reflex move{
-		do wander speed:1.0;
-	}
-}
 
-species bird skills:[moving]{
-	green my_home;
-	
-	reflex move{
-		do wander bounds:my_home.shape;
-	}
-	aspect base{
-		draw triangle(5) rotate:heading+90 color:#white;
-	}
-}
+
+
 
 experiment life type: gui {		
 	output synchronized:true{
 		display city_display type:3d {
 			species border aspect:base ;
-			species building aspect:base visible:show_landuse;
+			species building aspect:base visible:show_building;
+			species waste_water_channel aspect:base visible:show_water_channel;
+			species poi aspect:base visible:show_poi;
 			species water aspect:base visible:show_water;
-			species heritage_building aspect:base visible:show_heritage;
-			species trees aspect:base visible:show_tree;
-			species green aspect:base visible:show_green;
-			species fox aspect:base  visible:show_fox;
-			species bird aspect:base  visible:show_bird;
-			species waste_water_channel aspect:base visible:show_wastewater;
-			species poi aspect:base;
-		
-			event "l"  {show_landuse<-!show_landuse;}
-			event "h"  {show_heritage<-!show_heritage;}
-			event "t"  {show_tree<-!show_tree;}
+			event "b"  {show_building<-!show_building;}
+			event "c"  {show_water_channel<-!show_water_channel;}
+			event "p"  {show_poi<-!show_poi;}
 			event "w"  {show_water<-!show_water;}
-			event "f"  {show_fox<-!show_fox;}
-			event "b"  {show_bird<-!show_bird;}
-			event "g"  {show_green<-!show_green;}
 		}
 	}
 }
