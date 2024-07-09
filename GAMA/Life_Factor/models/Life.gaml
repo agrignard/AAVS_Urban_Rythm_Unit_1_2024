@@ -57,10 +57,37 @@ species building {
 	int mydepth;
 		
 	aspect base {
-		if (type="Commercial Accommodation"){
-			color<-#blue;
-		}
-		draw shape color:color;
+		if (type="Commercial Accommodation"or"Institutional Accommodation"or"Student Accommodation"){
+			color<-rgb(67,64,208);
+			}
+		if (type="Community Use"){
+			color<-rgb(232,206,69);
+			}
+		if (type="Educational/Research"){
+			color<-rgb(116,125,81);
+			}
+		if (type="Entertainment/Recreation - Indoor"or"Performances, Conferences, Ceremonies"){
+			color<-rgb(240,239,175);
+			}
+		if (type="Hospital/Clinic"){
+			color<-rgb(227,165,58);
+			}
+		if (type="House/Townhouse"or"Residential Apartment"){
+			color<-rgb(82,89,55);
+			}
+		if (type="Retail - Shop"or"Retail - Showroom"or"Wholesale"){
+			color<-rgb(188,132,208);
+			}
+		if (type="Office"or"Workshop/Studio"){
+			color<-rgb(82,89,55);
+			}
+		if (type="Parking - Commercial Covered"or"Parking - Private Covered"){
+			color<-rgb(61,62,64);
+			}
+		if (type="Transport"){
+			color<-rgb(51,58,64);
+			}
+			draw shape color:color border:#black;
 	}
 }
 
@@ -76,9 +103,9 @@ species heritage_building {
 		
 	aspect base {
 		if (type="N"){
-			color<-#black;
+			color<-rgb(131,137,140);
 		}
-		draw shape color:color;		
+		draw shape color:color border:rgb(82,89,55);		
 	}
 }
 species trees {
