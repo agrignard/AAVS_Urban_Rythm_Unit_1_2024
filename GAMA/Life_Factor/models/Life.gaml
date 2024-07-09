@@ -11,6 +11,7 @@ model Life
 /* Insert your model definition here */
 
 global{
+	
 	file shape_file_bounds <- file("../includes/GIS/cbd_border.shp");
 	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");
 	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
@@ -27,6 +28,15 @@ global{
 	bool show_water<-true;
 	bool show_fox<-true;
 	bool show_bird<-true;
+	
+	bool show_wind_model<-false;
+	bool show_water_model<-false;
+	bool show_shadow_model<-false;
+	bool show_biodiversity_model<-false;
+	
+	bool show_legend<-true;
+	rgb text_color<-rgb(125,125,125);
+	string myFont;
 	
 	init{
 		create border from: shape_file_bounds ;
@@ -110,7 +120,7 @@ species heritage_building {
 }
 species trees {
 	aspect base {
-		draw sphere(3) color:#green;
+		draw circle(3) color:#green;
 	}
 }
 
@@ -129,7 +139,7 @@ species wastewater{
 species fox skills:[moving]{
 	
 	aspect base{
-		draw triangle(5) rotate:heading+90 color:#brown;
+		draw triangle(25) rotate:heading+90 color:#brown;
 	}
 	reflex move{
 		do wander speed:1.0;
@@ -147,7 +157,10 @@ species bird skills:[moving]{
 	}
 }
 
-experiment life type: gui {		
+experiment life type: gui {
+	init{
+	  gama.pref_display_numkeyscam<-false;		
+	}	
 	output synchronized:true{
 		display city_display type:3d {
 			species border aspect:base ;
@@ -158,6 +171,11 @@ experiment life type: gui {
 			species green aspect:base visible:show_green;
 			species fox aspect:base  visible:show_fox;
 			species bird aspect:base  visible:show_bird;
+			
+			event "1"  {show_shadow_model<-!show_shadow_model;}
+			event "2"  {show_water_model<-!show_water_model;}
+			event "3"  {show_wind_model<-!show_wind_model;}
+			event "4"  {show_biodiversity_model<-!show_biodiversity_model;}
 		
 			event "l"  {show_landuse<-!show_landuse;}
 			event "h"  {show_heritage<-!show_heritage;}
@@ -166,6 +184,63 @@ experiment life type: gui {
 			event "f"  {show_fox<-!show_fox;}
 			event "b"  {show_bird<-!show_bird;}
 			event "g"  {show_green<-!show_green;}
+			
+			overlay position: { 50#px,50#px} size: { 1 #px, 1 #px } background: # black border: #black rounded: false
+			{
+	
+				if(show_legend){
+				draw image_file('../images/life.png') at: { 200#px,50#px } size:{120#px,84#px};
+				
+				//draw "Date: " + current_date at: {0,200#px} color: text_color font: font(myFont, 20, #bold);
+				
+                
+                //point UX_Position<-{world.shape.width*1.25,0#px};
+                point UX_Position<-{100#px,200#px};
+                float x<-UX_Position.x;
+                float y<-UX_Position.y;
+        
+                float gapBetweenWord<-25#px;
+                float tabGap<-25#px;
+                float uxTextSize<-20.0;
+                
+             
+                draw "(1) SHADOW MODEL(" + show_shadow_model + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                y<-y+gapBetweenWord;
+                y<-y+gapBetweenWord;
+                draw "(2) WATER MODEL(" + show_water_model + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                if(show_water_model){
+                	 y<-y+gapBetweenWord;
+                	 draw "(W)ATER WAYS (" + show_water + ")" at: { x+tabGap,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                	 
+                     
+                }
+                y<-y+gapBetweenWord;
+                y<-y+gapBetweenWord;
+                draw "(3) WIND MODEL (" + show_wind_model + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                y<-y+gapBetweenWord;
+                y<-y+gapBetweenWord;
+                draw "(4) BIODIVERSITY MODEL(" + show_biodiversity_model + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+               
+                if(show_biodiversity_model){
+                	y<-y+gapBetweenWord;
+                	draw "(G)REEN (" + show_green + ")" at: { x+tabGap,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                	y<-y+gapBetweenWord;  
+	                draw "(F)OX (" + show_fox + ")" at: { x+tabGap,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                draw "(B)IRD (" + show_bird + ")" at: { x+tabGap,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                
+                }
+                y<-y+gapBetweenWord;
+                y<-y+gapBetweenWord;
+                draw "(L)ANDUSE (" + show_landuse + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                y<-y+gapBetweenWord;
+                draw "(H)ERITAGE (" + show_heritage + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                y<-y+gapBetweenWord;
+ 
+               
+                 
+			}				
+		  }
 		}
 	}
 }
