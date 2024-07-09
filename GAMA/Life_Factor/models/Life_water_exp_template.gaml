@@ -83,11 +83,11 @@ species water skills: [moving] {
 	int river_id;
 
 	reflex move {
-		do goto target: target on: the_channel speed: 100.0;
+		do goto target: target on: the_channel speed: 30.0;
 	}	
 	
 	aspect base {
-		draw circle(10) color: #blue border: #black;
+		draw circle(10) color: #blue /*border: #black*/;
 	}
 }
 
@@ -96,7 +96,7 @@ species poi {
 	int river_id;
 	
 	aspect base{
-		draw circle(10) color: (type="source") ? #green : #red border: #black;		
+		draw circle(10) color: (type="source") ? #grey : #red /*border: #black*/;		
 	}	
 }
 species heritage_building {
@@ -123,7 +123,7 @@ species green{
 }
 species waste_water_channel{
 	aspect base {
-		draw shape color: #blue;		
+		draw shape width:1 color: #grey;		
 	}
 }
 
