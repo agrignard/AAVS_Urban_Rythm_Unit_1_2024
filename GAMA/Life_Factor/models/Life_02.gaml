@@ -17,13 +17,13 @@ global{
 	file cbd_buildings_heritage <- file("../includes/GIS/cbd_buildings_heritage.shp");
 	file cbd_transport_pedestrian <- file("../includes/GIS/cbd_pedestrian_network_custom.shp");
 	file cbd_trees <- file("../includes/GIS/cbd_trees.shp");
-	file cbd_green <- file("../includes/GIS/cbd_green.shp");
+	file cbd_green <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bat_route.shp");
 	
 	 //Biodiversity
 	file cbd_bird_migration <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_migration.shp");
 	file cbd_bird_start <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_entrancepoint.shp");
-	file cbd_fox_migration <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_fox_migrationroute.shp");
-	file cbd_fox_start <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_fox_migration.shp");
+	file cbd_fox_migration <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_fox_route.shp");
+	file cbd_fox_start <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_fox_entrancepoint.shp");
 	
 	 //Microclimate_wind
 	file cbd_wind_avgspeed <- file("../includes/GIS/microclimate/Wind/wind_avgspeed.shp");
