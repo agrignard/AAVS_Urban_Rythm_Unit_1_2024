@@ -42,6 +42,7 @@ global{
 	bool show_biodiversity_model<-false;
 	bool show_fox<-false;
 	bool show_bird<-false;
+	bool show_bird_gate<-false;
 	bool show_green<-true;
 	bool show_tree<-false;
 	
@@ -59,17 +60,27 @@ global{
 		create poi from: cbd_poi_file;
 		the_channel <- as_edge_graph(waste_water_channel);
 		
+		//BIRD MODEL
+		file cbd_bird_entrance <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_entrancepoint.shp");
+	    file cbd_bird_path <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_migration.shp");
+	    graph bird_channel;	
+	    int bird_population<-1000;
+	
+		
 		
 		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;
 		create trees from: cbd_trees ;
 		create green from:cbd_green;
 		create wastewater from: cbd_buildings;
-		create fox number:100;
-		create bird number:100{
-			green tmp_green<-one_of(green);
-			location<-any_location_in(one_of(tmp_green));
-			my_home<-tmp_green;
+		//BIODIVERSITY
+		//BIRD
+		create bird_gate from:cbd_bird_entrance with: [targets:string(read ("targets"))]{
+			self.shape<-circle(100) at_location self.location;
+			myTargets<-(targets split_with ',');
 		}
+		create bird_path from:cbd_bird_path;
+		bird_channel <- as_edge_graph(cbd_bird_path);
+		
 	}
 	
 	//WATER MODEL
@@ -80,6 +91,20 @@ global{
 			river_id<-tmpSource.river_id;
 			target <- one_of(poi where ((each.type = "outlet") and (each.river_id=self.river_id))) ;
 		}
+	}
+	
+	//BIRD MODEL
+	reflex createBird when:(cycle mod 20 =0){
+			ask bird_gate{
+				create bird number:1{
+					speed<-1.0+rnd(5.0);
+					location <-myself.location;
+					shape<-triangle(20);
+					string target_id<-one_of(myself.myTargets);
+					exit_gate<-first((bird_gate where  (each.id = target_id)));
+					my_target<-exit_gate.location;
+				}
+		    }
 	}
 	
 	//CREATE SCENARIO
@@ -106,6 +131,7 @@ global{
 	action triggerBiodiversityModel (bool value){
 		show_fox<-value;
 	    show_bird<-value;
+	    show_bird_gate<-value;
 	    show_green<-value;
 	    show_tree<-value;
 	}
@@ -209,6 +235,73 @@ species waste_water_channel{
 	}
 }
 
+
+//BIODIVERSITY
+species bird skills:[moving]{
+	point entry_point;
+	green my_green_space;
+	bird_gate exit_gate;
+	point my_target;
+	rgb color<-#pink;
+	bool hungry<-false;
+	bool full<-false;
+	float speed;
+	
+	
+	reflex checkGreen when:(hungry=false and full=false){
+		list<green> potentialGreen <- green at_distance 100;
+		if (length(potentialGreen)>0){
+			my_green_space<-first(potentialGreen);
+			my_target <-my_green_space.location;
+			color<-#purple;	
+			hungry<-true;
+		}
+	}
+	
+	reflex move{
+		if(my_target!=nil){
+			do goto target:my_target speed:speed;// on:bird_channel;
+		}else{
+			do die;
+		}
+		
+		if(self.shape intersects exit_gate.shape){
+			do die;
+		}
+		if(hungry=true and full=false){
+			if(!dead(my_green_space)){
+			  if(self.shape intersects my_green_space.shape){
+				my_target<-exit_gate.location;
+				full<-true;
+				hungry<-false;
+			  }	
+			}else{
+				do die;
+			}
+		}
+	}
+	
+	aspect base{
+		draw triangle(20) rotate: heading+90 color:hungry ? #purple : (full ? #green : #red) border:#black;
+	}
+}
+
+species bird_gate{
+	string id;
+	string targets;
+	list<string> myTargets;
+	aspect base{
+		draw square(30) color:#gray border:#black;
+	}
+}
+
+
+species bird_path{
+	aspect base{
+		draw shape width:2 color:#green border:#black;
+	}
+}
+
 species trees {
 	aspect base {
 		draw circle(3) color:#green;
@@ -237,16 +330,6 @@ species fox skills:[moving]{
 	}
 }
 
-species bird skills:[moving]{
-	green my_home;
-	
-	reflex move{
-		do wander bounds:my_home.shape;
-	}
-	aspect base{
-		draw triangle(5) rotate:heading+90 color:#white;
-	}
-}
 
 experiment life type: gui autorun:false{
 	init{
@@ -260,6 +343,8 @@ experiment life type: gui autorun:false{
 			species waste_water_channel aspect:base visible:show_water_channel;
 			species poi aspect:base visible:show_poi;
 			species water aspect:base visible:show_water;
+			species bird_gate aspect:base position:{0,0,0.01} visible:show_bird_gate;	
+			species bird aspect:base  position:{0,0,0.01} visible:show_bird;
 			species heritage_building aspect:base visible:show_heritage;
 			species trees aspect:base visible:show_tree;
 			species green aspect:base visible:show_green;
