@@ -98,7 +98,7 @@ species moveshadow parent: building{
 		
 	action compute_shadow_geom(point translation) {
 		current_translation <- current_translation + translation;
-		list<point> ref_points <- linked_building.compute_extremity(translation);
+		list<point> ref_points <- linked_building.compute_extremity(current_translation);
 		if empty(ref_points) {
 			location <- location + translation;
 			shadow_geom <- shape;
