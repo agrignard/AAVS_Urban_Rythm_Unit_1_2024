@@ -36,6 +36,7 @@ global{
 		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))] ;
 		
 		create bird_gate from:cbd_bird_entrance with: [targets:string(read ("targets"))]{
+			self.shape<-circle(100) at_location self.location;
 			myTargets<-(targets split_with ',');
 		}
 		create bird_path from:cbd_bird_path;
@@ -76,7 +77,10 @@ species bird skills:[moving]{
 	bird_gate exit_gate;
 	
 	reflex move{
-		do wander on:bird_channel;
+		do goto target:exit_gate on:bird_channel;
+		if(self.shape intersects exit_gate.shape){
+			do die;
+		}
 	}
 	
 	aspect base{
