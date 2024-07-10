@@ -27,12 +27,13 @@ global{
 	bool show_fix_shadow<-false;
 	bool show_moving_shadow<-true;
 
-	float rate_of_buildings_to_remove <- 0.8;
+	float rate_of_buildings_to_remove <- 0.5;
 	
 	init{
 		create border from: shape_file_bounds ;
 		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))]  {
 			if flip(rate_of_buildings_to_remove) {do die;}
+			convex <- convex_hull(shape);
 			create moveshadow  with: [shape::copy(shape), mydepth::mydepth]{
 				linked_building <- myself;
 				point trans <-{location_x_shift*1.5, location_y_shift*1.5}; 
@@ -61,6 +62,7 @@ species border {
 species building {
 	string type;
 	rgb color <- #darkblue;
+	geometry convex;
 	int mydepth;
 	aspect base {
 		draw shape color:color wireframe:false;
@@ -71,9 +73,26 @@ species building {
 		point per <-  {translation.y, -1 * translation.x} ;
 		float normPer <-  norm(per);
 		if (normPer > 0) {
-			per <- per / normPer * max(shape.width, shape.height);
-			geometry perpan <- line([location- per, location + per  ]);
-			return (perpan inter shape.contour).points;
+			float min_v <-  #max_float;
+			float max_v<- - #max_float;
+			point pt_min;
+			point pt_max;
+	
+			loop p over: convex.points {
+				float d <- location distance_to p;
+				float a <- angle_between(location, p,per);
+				float d_proj <- d * cos(a);
+				if (d_proj < min_v) {
+					min_v <- d_proj;
+					pt_min <- p;
+				}
+				if (d_proj > max_v) {
+					max_v <- d_proj;
+					pt_max <- p;
+				}
+			}
+			return [pt_min, pt_max];
+		
 		} else {
 			return [];
 		}
