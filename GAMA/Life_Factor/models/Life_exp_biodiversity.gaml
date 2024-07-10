@@ -15,6 +15,7 @@ global{
 	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");	
 	file cbd_bird_entrance <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_entrancepoint.shp");
 	file cbd_bird_path <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_migration.shp");
+	file cbd_green <- file("../includes/GIS/cbd_green.shp");
 
 	graph bird_channel;	
 	int bird_population<-1000;
@@ -27,8 +28,9 @@ global{
 
 	
 	bool show_building<-true;
-	bool show_fix_shadow<-true;
-	bool show_moving_shadow<-true;
+	bool show_gate<-true;
+	bool show_bird<-true;
+	bool show_park<-true;
 
 	
 	init{
@@ -41,18 +43,21 @@ global{
 		}
 		create bird_path from:cbd_bird_path;
 		bird_channel <- as_edge_graph(cbd_bird_path);
+		create green from:cbd_green;
 	}
 	
+	
 	reflex createBird{
-		if(length(bird)<bird_population){
 			ask bird_gate{
-				create bird number:10{
+				create bird number:1{
+					speed<-0.1+rnd(1.0);
 					location <-myself.location;
+					shape<-triangle(20);
 					string target_id<-one_of(myself.myTargets);
 					exit_gate<-first((bird_gate where  (each.id = target_id)));
+					my_target<-exit_gate.location;
 				}
 		    }
-		}
 	}
 }
 
@@ -64,27 +69,52 @@ species border {
 
 species building {
 	string type;
-	rgb color <- #darkblue ;
+	rgb color <- #black ;
 	int mydepth;
 		
 	aspect base {
-		draw shape color:color wireframe:false;
+		draw shape color:color wireframe:true;
 	}
 }
 
 species bird skills:[moving]{
 	point entry_point;
+	green my_green_space;
 	bird_gate exit_gate;
+	point my_target;
+	rgb color<-#pink;
+	bool hungry<-false;
+	bool full<-false;
+	float speed;
+	
+	
+	reflex checkGreen when:(hungry=false and full=false){
+		list<green> potentialGreen <- green at_distance 100;
+		if (length(potentialGreen)>0){
+			my_green_space<-first(potentialGreen);
+			my_target <-my_green_space.location;
+			color<-#purple;	
+			hungry<-true;
+		}
+	}
 	
 	reflex move{
-		do goto target:exit_gate on:bird_channel;
+		do goto target:my_target speed:speed;// on:bird_channel;
+		
 		if(self.shape intersects exit_gate.shape){
 			do die;
+		}
+		if(hungry=true and full=false){
+			if(self.shape intersects my_green_space.shape){
+				my_target<-exit_gate.location;
+				full<-true;
+				hungry<-false;
+			}
 		}
 	}
 	
 	aspect base{
-		draw triangle(20) rotate: heading+90 color:#pink border:#black;
+		draw triangle(20) rotate: heading+90 color:hungry ? #purple : (full ? #green : #red) border:#black;
 	}
 }
 
@@ -93,7 +123,7 @@ species bird_gate{
 	string targets;
 	list<string> myTargets;
 	aspect base{
-		draw square(50) color:#green border:#black;
+		draw square(30) color:#gray border:#black;
 	}
 }
 
@@ -105,18 +135,29 @@ species bird_path{
 }
 
 
-experiment life type: gui {		
-	output synchronized:true{		
+
+species green{
+	aspect base {
+		draw shape color:#green;
+	}
+}
+
+experiment life type: gui {	
+	float minimum_cycle_duration<-0.05;	
+	output synchronized:true
+	{		
 		display city_display_shadow type:3d {
 			
+			species building aspect:base visible:show_building;
+			species green aspect:base;
 			species border aspect:base ;
-			species bird_gate aspect:base;	
-			species bird_path aspect:base;	
-			species bird aspect:base;
+			species bird_gate aspect:base position:{0,0,0.01};	
+			//species bird_path aspect:base;	
+			species bird aspect:base  position:{0,0,0.01};
 			
-			event "b"  {show_building<-!show_building;}
-			event "f"  {show_fix_shadow<-!show_fix_shadow;}
-			event "m"  {show_moving_shadow<-!show_moving_shadow;}
+			event "p"  {show_park<-!show_park;}
+			event "g"  {show_gate<-!show_gate;}
+			event "b"  {show_bird<-!show_bird;}
 		}
 	}
 }
