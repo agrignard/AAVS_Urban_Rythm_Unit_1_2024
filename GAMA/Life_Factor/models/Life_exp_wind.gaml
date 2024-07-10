@@ -59,9 +59,9 @@ global{
 		create wind_avgdirection from: cbd_wind_direction;
 		create windborder from:cbd_wind_bounds;
 		create windy_building from: cbd_buildings with: [mydepth::100] {
-			/*if (mydepth<200){
-				do die;
-			}*/
+			if (mydepth<100){
+				//do die;
+			}
 		}
 		ask windy_building{
 			if flip(0.95){
@@ -79,38 +79,19 @@ global{
 		free_space <- free_space simplification(1.0);
 		
 		create windparticle number: nb_windparticle{
-			//People agents are placed randomly among the free space
-			
 			location <- any_location_in(free_space);
-			//target_loc <-  target_point;
 			target_loc<-{location.x,world.shape.height};
 			shape<-circle(size);
-		} 		 	
-		create water from: cbd_water_flow;
-		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;
-		create trees from: cbd_trees ;
-		create green from:cbd_green;
-		create wastewater from: cbd_buildings;
-		create fox number:100;
-		create bird number:100{
-			green tmp_green<-one_of(green);
-			location<-any_location_in(one_of(tmp_green));
-			my_home<-tmp_green;
-		}
-			
+		} 		 		
 		create global_wind_point from:cbd_windpoint with: [type::string(read ("loc_wind"))];
-		
-		write "building: " + length(building);
-	
-		write "windy_building: " + length(windy_building);
 	}
 	reflex create_flow{
-			create global_wind_flow {
-				global_wind_point tmpSource<-one_of(global_wind_point where (each.type = "Source"));
-				location <- tmpSource.location;
-				target <-  one_of (global_wind_point where (each.type = "Target"));
-					}
+		create global_wind_flow {
+			global_wind_point tmpSource<-one_of(global_wind_point where (each.type = "Source"));
+			location <- tmpSource.location;
+			target <- one_of(global_wind_point where (each.type = "Target"  and (each.line_id=tmpSource.line_id)) );		
 		}
+	}
 		
 }
 
@@ -133,7 +114,6 @@ species windparticle skills:[moving]{
 		
 	//Reflex to kill the agent when it has evacuated the area
 	reflex end when: location distance_to target_loc <= 2 * windparticle_size{
-		write name + " is arrived";
 		do die;
 	}
 	//Reflex to compute the velocity of the agent considering the cohesion factor
@@ -168,14 +148,8 @@ species windparticle skills:[moving]{
 	}
 	
 	reflex updatemySpeed{
-		write "wtf do you want?????'";
-		write "I domn4t fuckingh know ;y speed" + muCurrentSpeedZone;
 		wind_avgspeed tmp<-wind_avgspeed first_with(each overlaps self.shape);
-		write "now I know that my speed " + tmp.mySpeed;
 		speed<-float(tmp.mySpeed);
-		
-		
-		
 	}	
 	aspect base {
 		draw pyramid(size) color: color;
@@ -183,32 +157,26 @@ species windparticle skills:[moving]{
 	}
 	
 	aspect abstract {
-		//draw rectangle(5,10) rotate:heading;
-		draw triangle(50) rotate:heading+90 color:#darkblue;
-		//draw sphere(size*10) color: color;
+		draw triangle(30) rotate:heading+90 color:#lightblue border:#black;
 	}
 }
 
 species global_wind_flow skills: [moving]{
 	global_wind_point target ;
-	//target<- 
 	reflex move {
 		do goto target: target on: wind_avgdirection speed: 30.0;
 	}	
 	
 	aspect base{
-		draw circle(100) color:#pink;
+		draw triangle(50) rotate:heading+90 color:#darkblue;
 	}	
-	
-	
-	
-	
 }
 species global_wind_point {
 	string type;
+	int line_id;
 	
 	aspect base{
-		draw triangle(100) color:(type="Source") ? #blue : #lightblue;
+		draw circle(25) color:(type="Source") ? #blue : #lightblue wireframe:true;
 	}	
 }
 
@@ -232,40 +200,12 @@ species building {
 species windy_building{
 	int mydepth;
 	aspect base{
-		draw shape color:#pink depth:mydepth;
+		draw shape color:#lightblue depth:mydepth;
 	}	
 }
-species water {
-	aspect base {
-		draw shape color:#blue width:2;	
-    }
-}
-species heritage_building {
-	string type;
-	int mydepth;
-		
-	aspect base {
-		if (type="N"){
-			color<-#black;
-		}
-		draw shape color:color;		
-	}
-}
-species trees {
-	aspect base {
-		draw sphere(3) color:#green;
-	}
-}
-species green{
-	aspect base {
-		draw shape color:#green;
-	}
-}
-species wastewater{
-	aspect base {
-		draw circle(2) color:#red ;
-	}
-}
+
+
+
 species wind_avgspeed {
 	string type;
 	int mydepth;
@@ -303,45 +243,21 @@ species windborder {
 		draw shape color:#blue width:0;
 	}
 }
-species fox skills:[moving]{
-	
-	aspect base{
-		draw triangle(5) rotate:heading+90 color:#brown;
-	}
-	reflex move{
-		do wander speed:1.0;
-	}
-}
-species bird skills:[moving]{
-	green my_home;
-	
-	reflex move{
-		do wander bounds:my_home.shape;
-	}
-	aspect base{
-		draw triangle(5) rotate:heading+90 color:#white;
-	}
-}
+
 
 experiment life type: gui {		
 	output synchronized:true{
 		display city_display type:3d {
 			species border aspect:base ;
 			species building aspect:base visible:show_landuse;
-			species water aspect:base visible:show_water;
-			species heritage_building aspect:base visible:show_heritage;
-			species trees aspect:base visible:show_tree;
-			species green aspect:base visible:show_green;
-			species fox aspect:base  visible:show_fox;
-			species bird aspect:base  visible:show_bird;
 			species wind_avgspeed aspect:base  visible:show_avgwindspeed;
-			species wind_avgdirection aspect:base  visible:show_avgwinddirection;
 			species windborder aspect:base  visible:show_windborder;
-			species global_wind_point aspect:base;
-			species global_wind_flow aspect:base;
+			species global_wind_point aspect:base position:{0,0,0.01};
+			species global_wind_flow aspect:base position:{0,0,0.01};
+			species wind_avgdirection aspect:base  visible:show_avgwinddirection position:{0,0,0.01};
 			
 			species windy_building aspect:base;
-			species windparticle aspect:abstract;
+			species windparticle aspect:abstract position:{0,0,0.01};
 		
 			event "l"  {show_landuse<-!show_landuse;}
 			event "h"  {show_heritage<-!show_heritage;}
