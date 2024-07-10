@@ -24,20 +24,25 @@ global{
 	//int scale_shift <- 2;
 	
 	bool show_building<-true;
-	bool show_fix_shadow<-true;
+	bool show_fix_shadow<-false;
 	bool show_moving_shadow<-true;
 
+	float rate_of_buildings_to_remove <- 0.8;
 	
 	init{
 		create border from: shape_file_bounds ;
-		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))] ;
-		create freezeshadow from: cbd_buildings{
-			location <- {location.x+location_x_shift*1.5, location.y+location_y_shift*1.5};
+		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))]  {
+			if flip(rate_of_buildings_to_remove) {do die;}
+			create moveshadow  with: [shape::copy(shape), mydepth::mydepth]{
+				linked_building <- myself;
+				point trans <-{location_x_shift*1.5, location_y_shift*1.5}; 
+				do compute_shadow_geom(trans);
+				
+				//speed <- max_speed ;
+				create freezeshadow  with: [shape::copy(shadow_geom)];
+			}
 		}
-		create moveshadow from: cbd_buildings with: [mydepth::int(read ("footprin_1"))]{
-			location <- {location.x+location_x_shift*1.5, location.y+location_y_shift*1.5};
-			//speed <- max_speed ;
-		}
+		
 	}
 	
 	reflex updateSunlocation{
@@ -55,11 +60,23 @@ species border {
 
 species building {
 	string type;
-	rgb color <- #darkblue ;
+	rgb color <- #darkblue;
 	int mydepth;
-		
 	aspect base {
 		draw shape color:color wireframe:false;
+		
+	}
+	
+	list<point>  compute_extremity (point translation) {
+		point per <-  {translation.y, -1 * translation.x} ;
+		float normPer <-  norm(per);
+		if (normPer > 0) {
+			per <- per / normPer * max(shape.width, shape.height);
+			geometry perpan <- line([location- per, location + per  ]);
+			return (perpan inter shape.contour).points;
+		} else {
+			return [];
+		}
 	}
 }
 
@@ -72,24 +89,45 @@ species freezeshadow {
 	}
 }
 
-species moveshadow {
-	string type;
-	rgb color;
-	int mydepth;
+species moveshadow parent: building{
+	building linked_building;
+	geometry shadow_geom;
 	
+	
+	point current_translation <- {0,0};
+		
+	action compute_shadow_geom(point translation) {
+		current_translation <- current_translation + translation;
+		list<point> ref_points <- linked_building.compute_extremity(translation);
+		if empty(ref_points) {
+			location <- location + translation;
+			shadow_geom <- shape;
+		} else {
+			geometry poly <- polygon([first(ref_points),last(ref_points),last(ref_points)+current_translation,first(ref_points)+current_translation ]);
+			location <- location + translation;
+			shadow_geom <- shape union poly ;
+		}
+		
+		 	
+	}
 	reflex move{
-		location<-{location.x+location_x_shift*sin(cycle)*mydepth*0.0006,location.y-location_x_shift*sin(cycle)*mydepth*0.0006}; 
+		point trans <-{location_x_shift*sin(cycle)*mydepth*0.0006,-location_x_shift*sin(cycle)*mydepth*0.0006}; 
+		do compute_shadow_geom(trans);
+		
 	}
 	
 	aspect base{
-		draw shape color:#black;
+		draw shadow_geom color:#black;
+		
+		
+		
 	}
 }
 
 
 experiment life type: gui {		
 	output synchronized:true{		
-		display city_display_shadow type:3d {
+		display city_display_shadow type:2d {
 			species border aspect:base ;
 						
 			
