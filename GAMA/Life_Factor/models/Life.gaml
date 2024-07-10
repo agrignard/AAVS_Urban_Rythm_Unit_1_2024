@@ -249,7 +249,7 @@ species bird skills:[moving]{
 	
 	
 	reflex checkGreen when:(hungry=false and full=false){
-		list<green> potentialGreen <- green at_distance 100;
+		list<green> potentialGreen <- green at_distance 200;
 		if (length(potentialGreen)>0){
 			my_green_space<-first(potentialGreen);
 			my_target <-my_green_space.location;
@@ -331,12 +331,12 @@ species fox skills:[moving]{
 }
 
 
-experiment life type: gui autorun:false{
+experiment life type: gui autorun:true{
 	init{
 	  gama.pref_display_numkeyscam<-false;		
 	}	
 	output synchronized:true{
-		display city_display type:3d fullscreen:false{
+		display city_display type:3d fullscreen:true{
 			species border aspect:base ;
 			species building aspect:base visible:show_landuse;
 			//species proposal aspect:base;
