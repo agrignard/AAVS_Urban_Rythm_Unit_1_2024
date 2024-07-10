@@ -24,7 +24,7 @@ global{
 	 //Microclimate_wind
 	file cbd_wind_avgspeed <- file("../includes/GIS/microclimate/Wind/wind_avgspeed_2.shp");
 	file cbd_wind_direction <- file("../includes/GIS/microclimate/Wind/wind_directionanchors.shp");
-	file cbd_windparticle <- file ("../includes/GIS/microclimate/Wind/wind_startpoint.shp");
+	file cbd_windpoint <- file ("../includes/GIS/microclimate/Wind/wind_points.shp");
 	file cbd_wind_bounds <- file ("../includes/GIS/microclimate/Wind/wind_startbounds.shp");	
 	
 	geometry shape <- envelope(shape_file_bounds);
@@ -36,9 +36,9 @@ global{
 	bool show_water<-false;
 	bool show_fox<-false;
 	bool show_bird<-false;
-	bool show_avgwindspeed<-true;
+	bool show_avgwindspeed<-false;
 	bool show_avgwinddirection<-true;
-	bool show_windborder<-true;
+	bool show_windborder<-false;
 	
 	
     int maximal_turn <- 90; //in degree
@@ -59,18 +59,16 @@ global{
 		create wind_avgdirection from: cbd_wind_direction;
 		create windborder from:cbd_wind_bounds;
 		create windy_building from: cbd_buildings with: [mydepth::100] {
-			
 			/*if (mydepth<200){
 				do die;
 			}*/
-			
 		}
-		
 		ask windy_building{
 			if flip(0.95){
 				do die;
 			}
 		}
+				
 		free_space <- copy(shape);
 		//Creation of the buildinds
 		ask windy_building{
@@ -99,11 +97,21 @@ global{
 			location<-any_location_in(one_of(tmp_green));
 			my_home<-tmp_green;
 		}
+			
+		create global_wind_point from:cbd_windpoint with: [type::string(read ("loc_wind"))];
 		
 		write "building: " + length(building);
+	
 		write "windy_building: " + length(windy_building);
 	}
-	
+	reflex create_flow{
+			create global_wind_flow {
+				global_wind_point tmpSource<-one_of(global_wind_point where (each.type = "Source"));
+				location <- tmpSource.location;
+				target <-  one_of (global_wind_point where (each.type = "Target"));
+					}
+		}
+		
 }
 
 //Species people which move to the evacuation point using the skill moving
@@ -181,9 +189,29 @@ species windparticle skills:[moving]{
 	}
 }
 
-species global_wind_particle{
+species global_wind_flow skills: [moving]{
+	global_wind_point target ;
+	//target<- 
+	reflex move {
+		do goto target: target on: wind_avgdirection speed: 30.0;
+	}	
+	
+	aspect base{
+		draw circle(100) color:#pink;
+	}	
+	
+	
+	
 	
 }
+species global_wind_point {
+	string type;
+	
+	aspect base{
+		draw triangle(100) color:(type="Source") ? #blue : #lightblue;
+	}	
+}
+
 species border {
 	aspect base {
 		draw shape color:#blue width:2 wireframe:true;
@@ -309,6 +337,8 @@ experiment life type: gui {
 			species wind_avgspeed aspect:base  visible:show_avgwindspeed;
 			species wind_avgdirection aspect:base  visible:show_avgwinddirection;
 			species windborder aspect:base  visible:show_windborder;
+			species global_wind_point aspect:base;
+			species global_wind_flow aspect:base;
 			
 			species windy_building aspect:base;
 			species windparticle aspect:abstract;
