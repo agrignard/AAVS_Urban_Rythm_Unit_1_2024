@@ -29,70 +29,27 @@ global{
 
 	float rate_of_buildings_to_remove <- 0.8;
 	
-	
-	bool show_plant<-true;
-	
 	init{
 		create border from: shape_file_bounds ;
-		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))] ;
-		
-		ask int(0.8 * length(building)) first (building sort_by (-1 *(each distance_to location))) {
-			do die;
-		}
-		
-		ask building {
-			convex <- convex_hull(shape);
+		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))]  {
+			if flip(rate_of_buildings_to_remove) {do die;}
 			create moveshadow  with: [shape::copy(shape), mydepth::mydepth]{
 				linked_building <- myself;
 				point trans <-{location_x_shift*1.5, location_y_shift*1.5}; 
 				do compute_shadow_geom(trans);
 				
 				//speed <- max_speed ;
-				create freezeshadow{
-					 shape <- copy(myself.shadow_geom);
-					 shape <- shape -union(building overlapping self);
-					 if (shape = nil or shape.area = 0) {
-					 	do die;
-					 } 
-				} 
+				create freezeshadow  with: [shape::copy(shadow_geom)];
 			}
 		}
 		
+	}
+	
+	reflex updateSunlocation{
+		//location_x_shift<-
 		
 	}
 	
-	reflex updatePlant when: (cycle mod 100 =0){
-		ask freezeshadow{
-		   create plant number:1{		  	
-		  		size<-1+rnd(5);
-				shape<-circle(size);
-				initialLifeSpan<-rnd(180);
-				lifespan<-lifespan;
-				color<-#green+rnd(25);
-				location<-any_location_in(myself.shape);
-			}
-		}
-	}
-}
-
-
-species plant{
-	
-	rgb color;
-	int lifespan;
-	int size;
-	int initialLifeSpan;
-	
-	reflex liveandletdie{
-		lifespan<-lifespan-1;
-		if(lifespan=0){
-			do die;
-		}
-	}
-	
-	aspect base{
-		draw circle(size)/**abs(cos(270-lifespan)))*/ depth: 1.0 color:rgb(color.red,color.green,color.blue);
-	}
 }
 
 species border {
@@ -104,7 +61,6 @@ species border {
 species building {
 	string type;
 	rgb color <- #darkblue;
-	geometry convex;
 	int mydepth;
 	aspect base {
 		draw shape color:color wireframe:false;
@@ -115,26 +71,9 @@ species building {
 		point per <-  {translation.y, -1 * translation.x} ;
 		float normPer <-  norm(per);
 		if (normPer > 0) {
-			float min_v <-  #max_float;
-			float max_v<- - #max_float;
-			point pt_min;
-			point pt_max;
-	
-			loop p over: convex.points {
-				float d <- location distance_to p;
-				float a <- angle_between(location, p,per);
-				float d_proj <- d * cos(a);
-				if (d_proj < min_v) {
-					min_v <- d_proj;
-					pt_min <- p;
-				}
-				if (d_proj > max_v) {
-					max_v <- d_proj;
-					pt_max <- p;
-				}
-			}
-			return [pt_min, pt_max];
-		
+			per <- per / normPer * max(shape.width, shape.height);
+			geometry perpan <- line([location- per, location + per  ]);
+			return (perpan inter shape.contour).points;
 		} else {
 			return [];
 		}
@@ -144,7 +83,6 @@ species building {
 species freezeshadow {
 	string type;
 	rgb color <- #black;
-
 	
 	aspect base{
 		draw shape color:color;
@@ -172,7 +110,7 @@ species moveshadow parent: building{
 		
 		 	
 	}
-	reflex move when:cycle=1{
+	reflex move{
 		point trans <-{location_x_shift*sin(cycle)*mydepth*0.0006,-location_x_shift*sin(cycle)*mydepth*0.0006}; 
 		do compute_shadow_geom(trans);
 		
@@ -187,8 +125,6 @@ species moveshadow parent: building{
 }
 
 
-
-
 experiment life type: gui {		
 	output synchronized:true{		
 		display city_display_shadow type:2d {
@@ -198,13 +134,10 @@ experiment life type: gui {
 			species freezeshadow aspect:base visible:show_fix_shadow;
 			species moveshadow aspect:base visible:show_moving_shadow;
 			species building aspect:base visible:show_building;
-			
-			species plant aspect:base;
 		
 			event "b"  {show_building<-!show_building;}
 			event "f"  {show_fix_shadow<-!show_fix_shadow;}
 			event "m"  {show_moving_shadow<-!show_moving_shadow;}
-			event "p" {show_plant<-!show_plant;}
 
 		}
 	}
