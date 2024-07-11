@@ -14,6 +14,7 @@ global{
 	
 	file shape_file_bounds <- file("../includes/GIS/cbd_border.shp");
 	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");
+	file cbd_shadows <- file("../includes/GIS/microclimate/Shadow/cbd_shadow.shp");
 	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
 	file cbd_water_channel <- file("../includes/GIS/microclimate/Water/cbd_water_flowroute.shp");
 	file cbd_poi_file <- shape_file("../includes/GIS/microclimate/Water/cbd_water_poi.shp");
@@ -32,7 +33,7 @@ global{
 	
 	bool show_landuse<-false;
 	bool show_heritage<-false;
-	
+	bool show_shadow<-false;
 	bool show_wind_model<-false;
 	bool show_water_model<-false;
 	bool show_water_channel<-false;
@@ -54,6 +55,10 @@ global{
 		create border from: shape_file_bounds ;
 		create building from: cbd_buildings with: [type::string(read ("predominan"))] ;
 		create proposal from: cbd_proposals with: [type::string(read ("type")),name::string(read ("name")),height::float(read ("height"))] ;
+		
+		
+		//SHADOW MODEL
+		create freezeshadow from: cbd_shadows;
 		
 		//WATER MODEL
 		create waste_water_channel from: cbd_water_channel;
@@ -122,6 +127,10 @@ global{
 	
 	///MODEL TRIGGER
 	
+	action triggerShadowModel (bool value){
+		show_shadow<-value;
+	}
+	
 	action triggerWaterModel (bool value){
 		show_water<-value;
 	    show_water_channel<-value;
@@ -188,6 +197,14 @@ species proposal{
 	float height;
 	aspect base{
 		draw shape color:(type="Green")? #green : ((type="Built")? #brown : #blue)	depth:height;
+	}
+}
+
+species freezeshadow {
+	string type;
+	rgb color <- #black;
+	aspect base{
+		draw shape color:color;
 	}
 }
 
@@ -339,6 +356,7 @@ experiment life type: gui autorun:true{
 		display city_display type:3d fullscreen:true{
 			species border aspect:base ;
 			species building aspect:base visible:show_landuse;
+			species freezeshadow aspect:base visible:show_shadow;
 			//species proposal aspect:base;
 			species waste_water_channel aspect:base visible:show_water_channel;
 			species poi aspect:base visible:show_poi;
@@ -352,7 +370,12 @@ experiment life type: gui autorun:true{
 			species bird aspect:base  visible:show_bird;
 			
 			event "1"  {show_shadow_model<-!show_shadow_model;
-				
+				if(show_shadow_model){
+					ask simulation{do triggerShadowModel(true);}
+					
+				}else{
+					ask simulation{do triggerShadowModel(false);}
+				}
 			}
 			event "2"  {show_water_model<-!show_water_model;
 				if(show_water_model){
@@ -423,6 +446,10 @@ experiment life type: gui autorun:true{
                 
              
                 draw "(1) SHADOW MODEL(" + show_shadow_model + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                if(show_shadow_model){
+                	 y<-y+gapBetweenWord;
+                	 draw "S(H)ADOW (" + show_shadow + ")" at: { x+tabGap,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                }
                 y<-y+gapBetweenWord;
                 y<-y+gapBetweenWord;
                 draw "(2) WATER MODEL(" + show_water_model + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
