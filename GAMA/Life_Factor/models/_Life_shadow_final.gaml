@@ -33,7 +33,7 @@ global{
 			if(flip(0.1)){
 				create plant number:1{		  	
 			  		size<-5+rnd(8);
-					initialLifeSpan<-rnd(50);
+					initialLifeSpan<-1+rnd(50);
 					lifespan<-initialLifeSpan;
 					color<-#yellow;
 					location<-any_location_in(myself.shape);
