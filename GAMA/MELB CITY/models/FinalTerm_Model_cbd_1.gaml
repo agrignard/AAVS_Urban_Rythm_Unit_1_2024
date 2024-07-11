@@ -11,14 +11,15 @@ global {
 	//GIS FILE
 	file shape_file_buildings <- file("../includes/GIS/cbd_buildings.shp");
 	file shape_file_buildings_3D <- file("../includes/GIS/cbd_buildings_3D.shp");
+	file cbd_buildings <- file("../includes/GIS/Building/cbd_buildings.shp");
 	file shape_file_cbd_traffic <- file("../includes/GIS/cbd_networks.shp");
-	file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");
+	file shape_file_bounds <- file("../includes/GIS/Building/cbd_border.shp");
 	file shape_file_sensors <- file("../includes/GIS/cbd_sensors.shp");
 	file point_file_outside_cbd <- file("../includes/GIS/cbd_coming_from_outside.shp");
 	file text_file_population <- file("../includes/data/Demographic_CBD.csv");
 	file text_file_car <- file("../includes/data/car_cbd.csv");
 	file shape_file_trees <- file("../includes/GIS/Tree/cbd_tree.shp");
-	file shape_file_hack <- file("../includes/GIS/hack.shp");
+	file shape_file_hack <- file("../includes/GIS/cbd_hack.shp");
 	
 	geometry shape <- envelope(shape_file_bounds);
 	//TEMPORAL 
@@ -52,8 +53,11 @@ global {
 	map<int,float> grouptospeed<-[1::3.3 #km / #h, 2::4.5 #km / #h,3::4.5 #km / #h, 4::3.3 #km / #h,5::3.3 #km / #h];
    
 	
-	map<string,rgb> landuse_color<-["residential"::rgb(231, 111, 81),"university"::rgb(38, 70, 83), "mixed"::rgb(244, 162, 97), "office"::rgb(42, 157, 143), "retail"::rgb(233, 196, 106)
+	map<string,rgb> landuse_color<-["Commercial Accomodation"::rgb(231, 111, 81),"Community Use"::rgb(38, 70, 83), 
+	"Educational/Research"::rgb(244, 162, 97), "Entertainment/Recreation - Indoor"::rgb(42, 157, 143), 
+	"Retail - Shop"::rgb(233, 196, 106)
 		, "entertainment"::rgb(33, 158, 188),"carpark"::rgb(92, 103, 125),"park"::rgb(153, 217, 140)];
+		
 	map<string,rgb> path_type_color<-["car"::rgb(car_color),"bike"::rgb(bike_color),"tram"::rgb(tram_color),"people"::rgb(people_color),"bus"::rgb(bus_color)];
 
    
@@ -118,7 +122,7 @@ global {
 	
 	init {
 		//create building
-		create building from:shape_file_buildings with: [type::string(read ("type"))] ;
+		create building from:cbd_buildings with: [type::string(read ("predominan"))] ;
 		
 		create building3D from:shape_file_buildings_3D ;
 		
@@ -262,7 +266,7 @@ global {
 }
 
 species building {
-	string type; 
+	string type;
 	rgb color;
 	
 	aspect base {
@@ -354,7 +358,6 @@ species traffic_network{
 	type <- "driveway";
 	mode<-"car";
 	}
-	
 	aspect base {
 		draw shape color:path_type_color[mode] width:network_line_width;
 	}
@@ -428,7 +431,6 @@ species tram skills:[advanced_driving] {
 		draw rectangle(10*scale, 3*scale) rotate: heading color: #white ;
 	}
 }
-
 
 
 species bus skills:[advanced_driving]{
@@ -537,11 +539,10 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 			rotation angle:-21;
 			//camera 'default' location: {1058.0439,631.227,2080.5606} target: {1058.0439,631.1907,0.0};
 			//camera 'default' location: {3542.224,4531.1004,3413.7625} target: {-291.6741,-2109.4057,0.0};
-			camera 'default' location: {2529.6403,1959.1813,664.5679} target: {1165.3899,893.3121,0.0};
+			//camera 'default' location: {2529.6403,1959.1813,664.5679} target: {1165.3899,893.3121,0.0};
 			
-			species building aspect: base visible:show_building ;
-			species building3D aspect: base ;
-			species building aspect: landuse visible:show_landuse position:{0,0,exploded_layer? layerfactor*cycle*0:0.0};
+			species building aspect: landuse visible:true ;
+			//species building3D aspect: base ;
 			species traffic_network aspect: base visible:show_network position:{0,0,exploded_layer? layerfactor*cycle*2 :0.0};
 			species people aspect: base visible:show_people position:{0,0,exploded_layer? layerfactor*cycle*3 :0.0};
 			species tram aspect: base visible:show_tram position:{0,0,exploded_layer? layerfactor*cycle*4 :0.0};
@@ -650,7 +651,7 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
                 
                 if (show_landuse){
                 	y <- y + 40#px;
-                	draw "LANDUSE" at: { 60#px, y} color: text_color  font: font(myFont, 30, #bold);
+                	draw "landuse" at: { 60#px, y} color: text_color  font: font(myFont, 30, #bold);
                 	y <- y + 40#px;
                 	loop l over: landuse_color.pairs
                     {
