@@ -48,7 +48,7 @@ global{
 	//Space without buildings
 	geometry free_space;
 	//Number of windparticle agent
-	int nb_windparticle <- 10;
+	int nb_windparticle <- 100;
 	//Point to evacuate
 	point target_point <- {shape.width/2, shape.height};
 	
@@ -91,6 +91,15 @@ global{
 			location <- tmpSource.location;
 			target <- one_of(global_wind_point where (each.type = "Target"  and (each.line_id=tmpSource.line_id)) );		
 		}
+	}
+	
+	reflex upodatelocaWind when:(length(windparticle)<100){
+
+		create windparticle{
+			location <- any_location_in(free_space);
+			target_loc<-{location.x,world.shape.height};
+			shape<-circle(size);
+		} 
 	}
 		
 }
@@ -157,7 +166,7 @@ species windparticle skills:[moving]{
 	}
 	
 	aspect abstract {
-		draw triangle(30) rotate:heading+90 color:#lightblue;
+		draw triangle(30) rotate:heading+90 color:rgb(219,118,94);
 	}
 }
 
@@ -168,8 +177,8 @@ species global_wind_flow skills: [moving]{
 	}	
 	
 	aspect base{
-		draw rectangle(5,30) rotate:heading+90 color:#darkblue;
-		draw triangle(30) rotate:heading+90 color:#darkblue;
+		draw rectangle(5,30) rotate:heading+90 color:rgb(175,102,86);
+		draw triangle(30) rotate:heading+90 color:rgb(175,102,86);
 	}	
 }
 species global_wind_point {
@@ -192,16 +201,13 @@ species building {
 	int mydepth;
 		
 	aspect base {
-		if (type="Commercial Accommodation"){
-			color<-#blue;
-		}
-		draw shape color:color;
+		draw shape color:color wireframe:true;
 	}
 }
 species windy_building{
 	int mydepth;
 	aspect base{
-		draw shape color:#lightblue depth:mydepth;
+		draw shape color:rgb(175,102,86) depth:mydepth;
 	}	
 }
 
@@ -254,11 +260,11 @@ experiment life type: gui {
 			species wind_avgspeed aspect:base  visible:show_avgwindspeed;
 			species windborder aspect:base  visible:show_windborder;
 			species global_wind_point aspect:base position:{0,0,0.01};
-			species global_wind_flow aspect:base position:{0,0,0.01} trace:5 fading:true;
-			species wind_avgdirection aspect:base  visible:show_avgwinddirection position:{0,0,0.01};
+			species global_wind_flow aspect:base position:{0,0,0} trace:5 fading:true;
+			species wind_avgdirection aspect:base  visible:show_avgwinddirection position:{0,0,0.0};
 			
 			species windy_building aspect:base;
-			species windparticle aspect:abstract position:{0,0,0.01};
+			species windparticle aspect:abstract position:{0,0,0.0} trace:5 fading:true;
 		
 			/*event "l"  {show_landuse<-!show_landuse;}
 			event "h"  {show_heritage<-!show_heritage;}
