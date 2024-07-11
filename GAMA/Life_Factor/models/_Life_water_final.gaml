@@ -37,7 +37,8 @@ global{
 	}
 	
 	reflex create_water{
-		create water {
+		create water number:10{
+			speed<-1.0+rnd(25.0);
 			poi tmpSource<-one_of(poi where (each.type = "source"));
 			location <- tmpSource.location;
 			river_id<-tmpSource.river_id;
@@ -54,14 +55,14 @@ species border {
 }
 species building {
 	string type;
-	rgb color <- #gray ;
+	rgb color <- #purple ;
 	int mydepth;
 		
 	aspect base {
-		if (type="Commercial Accommodation"){
-			color<-#blue;
+		if (type="Unoccupied - Unused"){
+			color<-#darkgrey;
 		}
-		draw shape color:color;
+		draw shape color:color wireframe:true;
 	}
 }
 
@@ -70,11 +71,11 @@ species water skills: [moving] {
 	int river_id;
 
 	reflex move {
-		do goto target: target on: the_channel speed: 30.0;
+		do goto target: target on: the_channel speed:speed;
 	}	
 	
 	aspect base {
-		draw circle(10) color: #blue /*border: #black*/;
+		draw circle(4) color: #purple /*border: #black*/;
 	}
 }
 
@@ -83,7 +84,7 @@ species poi {
 	int river_id;
 	
 	aspect base{
-		draw circle(10) color: (type="source") ? #grey : #red border: #black;		
+		draw circle(12) color: (type="source") ? #purple : #red border: #black;		
 	}	
 }
 
@@ -100,9 +101,9 @@ species waste_water_channel{
 
 
 
-experiment life type: gui {		
+experiment life type: gui autorun:false{		
 	output synchronized:true{
-		display city_display type:3d {
+		display city_display type:3d fullscreen:true{
 			species border aspect:base ;
 			species building aspect:base visible:show_building;
 			species waste_water_channel aspect:base visible:show_water_channel;

@@ -114,7 +114,7 @@ species bird skills:[moving]{
 	}
 	
 	aspect base{
-		draw triangle(20) rotate: heading+90 color:hungry ? #purple : (full ? #green : #red) border:#black;
+		draw triangle(20) rotate: heading+90 color:hungry ? rgb(91,122,55) : (full ? rgb(100,175,116) : rgb(177,209,193)) border:#black;
 	}
 }
 
@@ -138,7 +138,7 @@ species bird_path{
 
 species green{
 	aspect base {
-		draw shape color:#green;
+		draw shape color:rgb(26,61,43);
 	}
 }
 
