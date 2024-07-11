@@ -27,15 +27,20 @@ global{
 	bool show_fix_shadow<-false;
 	bool show_moving_shadow<-true;
 
-	float rate_of_buildings_to_remove <- 0.5;
+	float rate_of_buildings_to_remove <- 0.8;
 	
 	
 	bool show_plant<-true;
 	
 	init{
 		create border from: shape_file_bounds ;
-		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))]  {
-			if flip(rate_of_buildings_to_remove) {do die;}
+		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))] ;
+		
+		ask int(0.8 * length(building)) first (building sort_by (-1 *(each distance_to location))) {
+			do die;
+		}
+		
+		ask building {
 			convex <- convex_hull(shape);
 			create moveshadow  with: [shape::copy(shape), mydepth::mydepth]{
 				linked_building <- myself;
@@ -43,28 +48,29 @@ global{
 				do compute_shadow_geom(trans);
 				
 				//speed <- max_speed ;
-				create freezeshadow  with: [shape::copy(shadow_geom-linked_building)];
+				create freezeshadow{
+					 shape <- copy(myself.shadow_geom);
+					 shape <- shape -union(building overlapping self);
+					 if (shape = nil or shape.area = 0) {
+					 	do die;
+					 } 
+				} 
 			}
 		}
 		
-		ask freezeshadow{
-			
-		}
-		
-
 		
 	}
 	
 	reflex updatePlant when: (cycle mod 100 =0){
 		ask freezeshadow{
-		  create plant number:1{		  	
-		  	size<-1+rnd(5);
-			shape<-circle(size);
-			initialLifeSpan<-rnd(180);
-			lifespan<-lifespan;
-			color<-#green+rnd(25);
-			location<-any_location_in(myself.shape);
-		  }
+		   create plant number:1{		  	
+		  		size<-1+rnd(5);
+				shape<-circle(size);
+				initialLifeSpan<-rnd(180);
+				lifespan<-lifespan;
+				color<-#green+rnd(25);
+				location<-any_location_in(myself.shape);
+			}
 		}
 	}
 }
@@ -85,7 +91,7 @@ species plant{
 	}
 	
 	aspect base{
-		draw circle(size*abs(cos(270-lifespan))) color:rgb(color.red,color.green,color.blue);
+		draw circle(size)/**abs(cos(270-lifespan)))*/ depth: 1.0 color:rgb(color.red,color.green,color.blue);
 	}
 }
 
