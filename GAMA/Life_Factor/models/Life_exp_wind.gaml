@@ -48,7 +48,7 @@ global{
 	//Space without buildings
 	geometry free_space;
 	//Number of windparticle agent
-	int nb_windparticle <- 100;
+	int nb_windparticle <- 10;
 	//Point to evacuate
 	point target_point <- {shape.width/2, shape.height};
 	
@@ -157,7 +157,7 @@ species windparticle skills:[moving]{
 	}
 	
 	aspect abstract {
-		draw triangle(30) rotate:heading+90 color:#lightblue border:#black;
+		draw triangle(30) rotate:heading+90 color:#lightblue;
 	}
 }
 
@@ -168,7 +168,8 @@ species global_wind_flow skills: [moving]{
 	}	
 	
 	aspect base{
-		draw triangle(50) rotate:heading+90 color:#darkblue;
+		draw rectangle(5,30) rotate:heading+90 color:#darkblue;
+		draw triangle(30) rotate:heading+90 color:#darkblue;
 	}	
 }
 species global_wind_point {
@@ -253,13 +254,13 @@ experiment life type: gui {
 			species wind_avgspeed aspect:base  visible:show_avgwindspeed;
 			species windborder aspect:base  visible:show_windborder;
 			species global_wind_point aspect:base position:{0,0,0.01};
-			species global_wind_flow aspect:base position:{0,0,0.01};
+			species global_wind_flow aspect:base position:{0,0,0.01} trace:5 fading:true;
 			species wind_avgdirection aspect:base  visible:show_avgwinddirection position:{0,0,0.01};
 			
 			species windy_building aspect:base;
 			species windparticle aspect:abstract position:{0,0,0.01};
 		
-			event "l"  {show_landuse<-!show_landuse;}
+			/*event "l"  {show_landuse<-!show_landuse;}
 			event "h"  {show_heritage<-!show_heritage;}
 			event "t"  {show_tree<-!show_tree;}
 			event "w"  {show_water<-!show_water;}
@@ -268,7 +269,7 @@ experiment life type: gui {
 			event "g"  {show_green<-!show_green;}
 			event "a"  {show_avgwindspeed<-!show_avgwindspeed;}
 			event "e"  {show_avgwinddirection<-!show_avgwinddirection;}
-			event "d"  {show_windborder<-!show_windborder;}
+			event "d"  {show_windborder<-!show_windborder;}*/
 		}
 	}
 }
