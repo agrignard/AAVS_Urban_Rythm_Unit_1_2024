@@ -10,23 +10,17 @@ model Life
 
 /* Insert your model definition here */
 
+import './parameters.gaml'
+import './shadow.gaml'
+import "./water.gaml"
+import "./wind.gaml"
+
 global{
 	
-	file shape_file_bounds <- file("../includes/GIS/cbd_border.shp");
-	file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");
-	file cbd_shadows <- file("../includes/GIS/microclimate/Shadow/cbd_shadow.shp");
-	file cbd_water_flow <- file("../includes/GIS/cbd_water_flow.shp");
-	file cbd_water_channel <- file("../includes/GIS/microclimate/Water/cbd_water_flowroute.shp");
-	file cbd_poi_file <- shape_file("../includes/GIS/microclimate/Water/cbd_water_poi.shp");
-	graph the_channel;
-	file cbd_buildings_heritage <- file("../includes/GIS/cbd_buildings_heritage.shp");
-	file cbd_transport_pedestrian <- file("../includes/GIS/cbd_pedestrian_network_custom.shp");
-	file cbd_trees <- file("../includes/GIS/cbd_trees.shp");
-	file cbd_green <- file("../includes/GIS/cbd_green.shp");
 	
+	file cbd_green <- file("../includes/GIS/cbd_green.shp");	
 	file cbd_proposals<-file("../includes/GIS/cbd_proposals.shp");
 	geometry shape <- envelope(shape_file_bounds);
-	
 	bool show_scenario_1<-false;
 	bool show_scenario_2<-false;
 	bool show_scenario_3<-false;
@@ -44,26 +38,36 @@ global{
 	bool show_fox<-false;
 	bool show_bird<-false;
 	bool show_bird_gate<-false;
-	bool show_green<-true;
+	bool show_green<-false;
 	bool show_tree<-false;
+	bool show_avgwindspeed<-false;
+	bool show_avgwinddirection<-true;
+	bool show_windborder<-false;
+	bool show_global_wind_flow<-false;
+	bool show_global_wind_point<-false;
+	bool show_windy_building<-false;
+	bool show_local_wind_particle<-false;
 	
 	bool show_legend<-true;
 	rgb text_color<-rgb(125,125,125);
 	string myFont;
 	
 	init{
-		create border from: shape_file_bounds ;
+		create border from: shape_file_bounds ;		
 		create building from: cbd_buildings with: [type::string(read ("predominan"))] ;
-		create proposal from: cbd_proposals with: [type::string(read ("type")),name::string(read ("name")),height::float(read ("height"))] ;
+		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;
+		
+	    create proposal from: cbd_proposals with: [type::string(read ("type")),name::string(read ("name")),height::float(read ("height"))] ;
 		
 		
 		//SHADOW MODEL
-		create freezeshadow from: cbd_shadows;
+		do initShadowModel;
 		
 		//WATER MODEL
-		create waste_water_channel from: cbd_water_channel;
-		create poi from: cbd_poi_file;
-		the_channel <- as_edge_graph(waste_water_channel);
+		do initWaterModel;
+		
+		//WIND MODEL
+		do initWindModel(cbd_buildings);
 		
 		//BIRD MODEL
 		file cbd_bird_entrance <- file("../includes/GIS/microclimate/Biodiversity/biodiversity_bird_entrancepoint.shp");
@@ -73,9 +77,9 @@ global{
 	
 		
 		
-		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;
-		create trees from: cbd_trees ;
-		create green from:cbd_green;
+		create green from: cbd_trees ;
+
+
 		create wastewater from: cbd_buildings;
 		//BIODIVERSITY
 		//BIRD
@@ -111,7 +115,6 @@ global{
 				}
 		    }
 	}
-	
 	//CREATE SCENARIO
 	action createScenario(string _name){
 		ask proposal where (each.name=_name){
@@ -137,6 +140,14 @@ global{
 	    show_poi<-value;
 	}
 	
+
+	action triggerWindModel (bool value){
+       show_global_wind_flow<-value;
+       show_global_wind_point<-value;
+	   show_windy_building<-value;
+       show_local_wind_particle<-value;
+	}
+	
 	action triggerBiodiversityModel (bool value){
 		show_fox<-value;
 	    show_bird<-value;
@@ -146,50 +157,6 @@ global{
 	}
 }
 
-species border {
-	aspect base {
-		draw shape color:#blue width:2 wireframe:true;
-	}
-}
-species building {
-	string type;
-	rgb color <- #gray ;
-	int mydepth;
-		
-	aspect base {
-		if (type="Commercial Accommodation"or"Institutional Accommodation"or"Student Accommodation"){
-			color<-rgb(67,64,208);
-			}
-		if (type="Community Use"){
-			color<-rgb(232,206,69);
-			}
-		if (type="Educational/Research"){
-			color<-rgb(116,125,81);
-			}
-		if (type="Entertainment/Recreation - Indoor"or"Performances, Conferences, Ceremonies"){
-			color<-rgb(240,239,175);
-			}
-		if (type="Hospital/Clinic"){
-			color<-rgb(227,165,58);
-			}
-		if (type="House/Townhouse"or"Residential Apartment"){
-			color<-rgb(82,89,55);
-			}
-		if (type="Retail - Shop"or"Retail - Showroom"or"Wholesale"){
-			color<-rgb(188,132,208);
-			}
-		if (type="Office"or"Workshop/Studio"){
-			color<-rgb(82,89,55);
-			}
-		if (type="Parking - Commercial Covered"or"Parking - Private Covered"){
-			color<-rgb(61,62,64);
-			}
-		if (type="Transport"){
-			color<-rgb(51,58,64);
-			}
-			draw shape color:color border:#black;
-	}
-}
 
 species proposal{
 	string type;
@@ -200,57 +167,9 @@ species proposal{
 	}
 }
 
-species freezeshadow {
-	string type;
-	rgb color <- #black;
-	aspect base{
-		draw shape color:color;
-	}
-}
-
-species heritage_building {
-	string type;
-	int mydepth;
-		
-	aspect base {
-		if (type="N"){
-			color<-rgb(131,137,140);
-		}
-		draw shape color:color border:rgb(82,89,55);		
-	}
-}
-
-
-///////WATER MODEL ////////
-species water skills: [moving] {
-	poi target ;
-	int river_id;
-
-	reflex move {
-		do goto target: target on: the_channel speed: 30.0;
-	}	
-	
-	aspect base {
-		draw circle(10) color: #blue /*border: #black*/;
-	}
-}
-
-species poi {
-	string type;
-	int river_id;
-	
-	aspect base{
-		draw circle(10) color: (type="source") ? #grey : #red border: #black;		
-	}	
-}
 
 
 
-species waste_water_channel{
-	aspect base {
-		draw shape width:1 color: #darkblue;		
-	}
-}
 
 
 //BIODIVERSITY
@@ -319,11 +238,7 @@ species bird_path{
 	}
 }
 
-species trees {
-	aspect base {
-		draw circle(3) color:#green;
-	}
-}
+
 
 species green{
 	string type;
@@ -356,11 +271,21 @@ experiment life type: gui autorun:true{
 		display city_display type:3d fullscreen:true{
 			species border aspect:base ;
 			species building aspect:base visible:show_landuse;
-			species freezeshadow aspect:base visible:show_shadow;
+			species shadow aspect:base visible:show_shadow;
 			//species proposal aspect:base;
 			species waste_water_channel aspect:base visible:show_water_channel;
 			species poi aspect:base visible:show_poi;
 			species water aspect:base visible:show_water;
+			species wind_avgspeed aspect:base  visible:show_avgwindspeed;
+			species windborder aspect:base  visible:show_windborder;
+			species global_wind_point aspect:base position:{0,0,0.01} visible:show_global_wind_point;
+			species global_wind_flow aspect:base position:{0,0,0} trace:5 fading:true visible:show_global_wind_flow;
+			species wind_avgdirection aspect:base  visible:show_avgwinddirection position:{0,0,0.0};
+			species windy_building aspect:base visible:show_windy_building;
+			species windparticle aspect:abstract position:{0,0,0.0} trace:5 fading:true visible:show_local_wind_particle;
+			
+			
+			
 			species bird_gate aspect:base position:{0,0,0.01} visible:show_bird_gate;	
 			species bird aspect:base  position:{0,0,0.01} visible:show_bird;
 			species heritage_building aspect:base visible:show_heritage;
@@ -385,7 +310,15 @@ experiment life type: gui autorun:true{
 				}
 				
 			}
-			event "3"  {show_wind_model<-!show_wind_model;}
+			event "3"  {show_wind_model<-!show_wind_model;
+				if(show_wind_model){
+				  ask simulation{do triggerWindModel(true);}
+				}else{
+				  ask simulation{do triggerWindModel(false);}
+				}
+				
+				
+			}
 			event "4"  {show_biodiversity_model<-!show_biodiversity_model;
 				if (show_biodiversity_model){
 					ask simulation{do triggerBiodiversityModel(true);}

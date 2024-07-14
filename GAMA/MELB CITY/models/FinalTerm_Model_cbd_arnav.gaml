@@ -270,14 +270,13 @@ global {
 species building {
 	string type;
 	rgb color;
+	int mydepth;
 	
 	aspect base {
 		draw shape color:building_color;
 	}
 	
 	aspect landuse{
-		//write "wtf is your type" + type;
-		//write "landuse_color[type]" +landuse_color[type];
 		if(landuse_color[type]=nil){
 			color<-rgb(236,233,232);
 		}else{
