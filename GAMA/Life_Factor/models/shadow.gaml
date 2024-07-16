@@ -11,11 +11,13 @@ model Life_Shadow
 /* Insert your model definition here */
 
 global{
+
 	file cbd_shadows <- file("../includes/GIS/microclimate/Shadow/cbd_shadow.shp");	
-	
 	action initShadowModel{
 		create shadow from: cbd_shadows;
 	}
+	
+	bool show_shadow<-false;
 }
 
 

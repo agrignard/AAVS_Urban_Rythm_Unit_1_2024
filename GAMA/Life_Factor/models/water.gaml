@@ -8,6 +8,8 @@
 
 model Life_Water
 
+import './parameters.gaml'
+
 /* Insert your model definition here */
 
 global{
@@ -15,11 +17,27 @@ global{
 	file cbd_water_channel <- file("../includes/GIS/microclimate/Water/cbd_water_flowroute.shp");
 	file cbd_poi_file <- shape_file("../includes/GIS/microclimate/Water/cbd_water_poi.shp");
 	graph water_channel;
+
+	bool show_water_channel<-false;
+	bool show_poi<-false;
+	bool show_water<-false;
+	
 	
 	action initWaterModel{
 		create waste_water_channel from: cbd_water_channel;
 		create poi from: cbd_poi_file;
 		water_channel <- as_edge_graph(waste_water_channel);
+		create wastewater from: cbd_buildings;
+	}
+	
+	//WATER MODEL
+	reflex create_water{
+		create water {
+			poi tmpSource<-one_of(poi where (each.type = "source"));
+			location <- tmpSource.location;
+			river_id<-tmpSource.river_id;
+			target <- one_of(poi where ((each.type = "outlet") and (each.river_id=self.river_id))) ;
+		}
 	}
 }
 
@@ -51,6 +69,12 @@ species poi {
 species waste_water_channel{
 	aspect base {
 		draw shape width:1 color: #darkblue;		
+	}
+}
+
+species wastewater{
+	aspect base {
+		draw circle(2) color:#red ;
 	}
 }
 

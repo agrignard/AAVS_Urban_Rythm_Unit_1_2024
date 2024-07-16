@@ -16,7 +16,15 @@ global{
 	file cbd_wind_avgspeed <- file("../includes/GIS/microclimate/Wind/wind_avgspeed_2.shp");
 	file cbd_wind_direction <- file("../includes/GIS/microclimate/Wind/wind_directionanchors.shp");
 	file cbd_windpoint <- file ("../includes/GIS/microclimate/Wind/wind_points.shp");
-	file cbd_wind_bounds <- file ("../includes/GIS/microclimate/Wind/wind_startbounds.shp");	
+	file cbd_wind_bounds <- file ("../includes/GIS/microclimate/Wind/wind_startbounds.shp");
+	
+	bool show_avgwindspeed<-false;
+	bool show_avgwinddirection<-true;
+	bool show_windborder<-false;
+	bool show_global_wind_flow<-false;
+	bool show_global_wind_point<-false;
+	bool show_windy_building<-false;
+	bool show_local_wind_particle<-false;	
 	
 	
 	bool local_wind_model<-false;

@@ -19,6 +19,7 @@ global{
 	file cbd_proposal_1 <- file("../includes/GIS/cbd_proposal_1.shp");
 	file cbd_proposal_2 <- file("../includes/GIS/cbd_proposal_2.shp");
 	file cbd_proposal_3 <- file("../includes/GIS/cbd_proposal_3.shp");
+	file cbd_proposals<-file("../includes/GIS/cbd_proposalunion.shp");
 
 	graph bird_channel;	
 	int bird_population<-1000;
@@ -35,6 +36,7 @@ global{
 	bool show_bird<-true;
 	bool show_park<-true;
 	
+	bool show_proposal;
 	bool show_proposal_1;
 	bool show_proposal_2;
 	bool show_proposal_3;
@@ -43,6 +45,9 @@ global{
 	init{
 		create border from: shape_file_bounds ;
 		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))] ;
+		if(show_proposal){
+		  create proposal from: cbd_proposals with: [type::string(read ("type")),name::string(read ("name")),height::float(read ("height"))] ;
+		}		
 		
 		create bird_gate from:cbd_bird_entrance with: [targets:string(read ("targets"))]{
 			self.shape<-circle(100) at_location self.location;
@@ -50,7 +55,9 @@ global{
 		}
 		create bird_path from:cbd_bird_path;
 		bird_channel <- as_edge_graph(cbd_bird_path);
-		create green from:cbd_green;
+		create green from:cbd_green{
+			type<-"existing";
+	    }
 		if(show_proposal_1)
 		{
 		  create green from:cbd_proposal_1;	
@@ -83,17 +90,26 @@ global{
 
 species border {
 	aspect base {
-		draw shape color:#red width:2 wireframe: true;
+		draw shape color:#black width:2 wireframe: true;
 	}
 }
 
 species building {
 	string type;
-	rgb color <- #black ;
+	rgb color <- #lightgray ;
 	int mydepth;
 		
 	aspect base {
-		draw shape color:color wireframe:true;
+		draw shape color:color;
+	}
+}
+
+species proposal{
+	string type;
+	string name;
+	float height;
+	aspect base{
+		draw shape color:(type="Green")? #green : ((type="Built")? #brown : #blue)	depth:height;
 	}
 }
 
@@ -106,7 +122,6 @@ species bird skills:[moving]{
 	bool hungry<-false;
 	bool full<-false;
 	float speed;
-	
 	
 	reflex checkGreen when:(hungry=false and full=false){
 		list<green> potentialGreen <- green at_distance 150;
@@ -157,6 +172,7 @@ species bird_path{
 
 
 species green{
+	string type;
 	aspect base {
 		draw shape color:rgb(26,61,43);
 	}
@@ -166,12 +182,14 @@ experiment life_2024 type: gui {
 	float minimum_cycle_duration<-0.05;	
 	output synchronized:true
 	{		
-		display city_display_shadow type:3d {		
-			species building aspect:base visible:show_building;
+		display city_display_shadow type:3d fullscreen:true autosave:false{		
+			
 			species green aspect:base;
 			species border aspect:base ;
+			species proposal aspect:base;
 			species bird_gate aspect:base position:{0,0,0.01};		
-			species bird aspect:base  position:{0,0,0.01};	
+			species bird aspect:base  position:{0,0,0.05};	
+			species building aspect:base visible:show_building transparency:0.4;
 			event "p"  {show_park<-!show_park;}
 			event "g"  {show_gate<-!show_gate;}
 			event "b"  {show_bird<-!show_bird;}
@@ -183,19 +201,20 @@ experiment life_full type: gui {
 	float minimum_cycle_duration<-0.05;	
 	init{
 		//we create a second simulation (the first simulation is always created by default) with the following parameters
-		create simulation with: [show_proposal_1:: true];
-		create simulation with: [show_proposal_2:: true];
-		create simulation with: [show_proposal_3:: true];
+		create simulation with: [show_proposal_1::true,show_proposal:: true];
+		create simulation with: [show_proposal_2::true,show_proposal:: true];
+		create simulation with: [show_proposal_3:: true,show_proposal:: true];
 	}
 	output synchronized:true
 	{	
 			
 		display city_display_shadow type:3d {		
-			species building aspect:base visible:show_building;
+			species building aspect:base visible:show_building ;
 			species green aspect:base;
 			species border aspect:base ;
+			species proposal aspect:base;
 			species bird_gate aspect:base position:{0,0,0.01};		
-			species bird aspect:base  position:{0,0,0.01};	
+			species bird aspect:base  position:{0,0,0.05};	
 			event "p"  {show_park<-!show_park;}
 			event "g"  {show_gate<-!show_gate;}
 			event "b"  {show_bird<-!show_bird;}
