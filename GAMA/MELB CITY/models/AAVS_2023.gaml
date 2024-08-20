@@ -10,10 +10,11 @@ model CBDToolKit1
 global {
 	//GIS FILE
 	file shape_file_buildings <- file("../includes/GIS/cbd_buildings.shp");
-	file shape_file_buildings_3D <- file("../includes/GIS/cbd_buildings_3D.shp");
 	file shape_file_cbd_traffic <- file("../includes/GIS/cbd_networks.shp");
+	file shape_file_cbd_tram <- file("../includes/GIS/cbd_tram_custom.shp");
 	file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");
-	file shape_file_sensors <- file("../includes/GIS/cbd_sensors.shp");
+	
+	
 	file point_file_outside_cbd <- file("../includes/GIS/cbd_coming_from_outside.shp");
 	file text_file_population <- file("../includes/data/Demographic_CBD.csv");
 	file text_file_car <- file("../includes/data/car_cbd.csv");
@@ -21,12 +22,14 @@ global {
 	file shape_file_hack <- file("../includes/GIS/hack.shp");
 	
 	geometry shape <- envelope(shape_file_bounds);
+	
+	
 	//TEMPORAL 
 	float step <- 10 #sec;
 	field cell <- field(300,300);
 	date starting_date <- date([2023,7,14,6,0,0]);
 
-	int nb_tram <- 100;
+	int nb_tram <- 50;
 	int nb_bike <- 100;
 	int nb_bus <- 50;
 	float min_tram_speed <- 10.0 #km / #h;
@@ -44,8 +47,6 @@ global {
 	graph bike_network_graph;
 	graph pedestrian_network_graph;
 	graph bus_network_graph;
-	
-	float reducefactor<-0.1;
 	
 	map<int,string> grouptostring<-[1::"0-14", 2::"15-34",3::"35-64", 4::"65-84",5::"Above 85"];
 	map<int,rgb> age_color<-[1::rgb(33, 158, 188), 2::rgb(33, 158, 188),3::rgb(33, 158, 188), 4::rgb(33, 158, 188),5::rgb(33, 158, 188),5::rgb(33, 158, 188),6::rgb(33, 158, 188)];
@@ -119,15 +120,14 @@ global {
 	init {
 		//create building
 		create building from:shape_file_buildings with: [type::string(read ("type"))] ;
-		
-		create building3D from:shape_file_buildings_3D ;
-		
 		list<building> residential_buildings <- building where (each.type="residential" or each.type="mixed");
-		 list<building> industrial_buildings <- building  where (each.type="work" or each.type="university" or each.type="mixed") ;
-		 list<building> carpark_cbd <- building  where (each.type="residential" or each.type="mixed" or each.type="carpark");
+		list<building> industrial_buildings <- building  where (each.type="work" or each.type="university" or each.type="mixed") ;
+		list<building> carpark_cbd <- building  where (each.type="residential" or each.type="mixed" or each.type="carpark");
 		
 		//create traffic system
 		create outside_gates from: point_file_outside_cbd;
+		
+		create tramline from:shape_file_cbd_tram;
 		
 		
 		
@@ -149,8 +149,8 @@ global {
 				do die;
 			}
 		}
-		list<traffic_network> tramway <- traffic_network where (each.type="tramway");
-		tram_network_graph <- as_edge_graph (tramway);
+		//list<tramline> tramway <- tramline;
+		tram_network_graph <- as_edge_graph (tramline);
 		list<traffic_network> pedestrianway <- traffic_network where (each.type="footway");
 		pedestrian_network_graph <- as_edge_graph (pedestrianway);
 		list<traffic_network> bikeway <- traffic_network where (each.type="driveway");
@@ -194,6 +194,7 @@ global {
 		
 
 		create tram number: nb_tram {
+			location<-any_location_in(one_of(tramline));
 		// add loop break function to distribute tram
 
 		}
@@ -216,13 +217,8 @@ global {
 		}
 		
 		
-		create bike number:nb_bike;
-		
-		create sensor from:shape_file_sensors;
-		
+		create bike number:nb_bike;				
 		create hack from:shape_file_hack;
-
-		
 	}
 	
 	reflex pollution_evolution {
@@ -359,6 +355,12 @@ species traffic_network{
 		draw shape color:path_type_color[mode] width:network_line_width;
 	}
 }
+
+species tramline{
+	aspect base {
+		draw shape color:path_type_color["tram"] width:network_line_width;
+	}
+}
 species outside_gates;
 
 species sensor{
@@ -411,15 +413,16 @@ species people skills:[moving] {
 	}
 }
 
-species tram skills:[advanced_driving] {
+species tram skills:[moving] {
 	int scale<-3;
 	init {
-		vehicle_length <- 33 #m;
-		max_speed <- 40 #km / #h;
-		max_acceleration <- 3.5;
+		//vehicle_length <- 33 #m;
+		//max_speed <- 40 #km / #h;
+		//max_acceleration <- 3.5;
 	}
 	
 	reflex move when: (current_date.hour between(5,24) and simpleSimulation){
+		  write 'oh ca move les trams ou quoi?';
 		  do wander on: tram_network_graph;	
 	}
 
@@ -431,7 +434,7 @@ species tram skills:[advanced_driving] {
 
 
 
-species bus skills:[advanced_driving]{
+species bus skills:[driving]{
 	int scale<-3;
 	init{
 		vehicle_length <- 15#m ;
@@ -469,7 +472,7 @@ species bus skills:[advanced_driving]{
 		draw rectangle(8*scale, 2*scale) rotate: heading color:bus_color;
 	}
 }
-species car skills:[advanced_driving] {
+species car skills:[driving] {
 	int scale<-3;
 	init {
 		vehicle_length <- 15#m ;
@@ -509,7 +512,7 @@ species car skills:[advanced_driving] {
 	}
 }
 
-species bike skills:[advanced_driving] {
+species bike skills:[driving] {
 
 	//Reflex to move to the target building moving on the road network
 	reflex move when:simpleSimulation{
@@ -540,7 +543,6 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 			//camera 'default' location: {2529.6403,1959.1813,664.5679} target: {1165.3899,893.3121,0.0};
 			
 			species building aspect: base visible:show_building ;
-			//species building3D aspect: base ;
 			species building aspect: landuse visible:show_landuse position:{0,0,exploded_layer? layerfactor*cycle*0:0.0};
 			species traffic_network aspect: base visible:show_network position:{0,0,exploded_layer? layerfactor*cycle*2 :0.0};
 			species people aspect: base visible:show_people position:{0,0,exploded_layer? layerfactor*cycle*3 :0.0};
@@ -799,8 +801,6 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 				accumulate_values: false						
 				color: rgb(244,216,189);
 			}
-
-
 		}
 	}
 }
@@ -808,30 +808,12 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 
 experiment cbd_toolkit_desktop type: gui autorun:false parent:cbd_toolkit_virtual{	
 	float minimum_cycle_duration<-0.01;
-	
 	output{
-		
-		display table parent:Screen1 {
-			
+		display table parent:Screen1 {	
 		}
-		//display screen parent:Screen2{}
-	}
-}
-
-
-experiment cbd_toolkit_demo type: gui autorun:true parent:cbd_toolkit_virtual{	
-	float minimum_cycle_duration<-0.01;
-	
-	output{
-		display table parent:Screen1 fullscreen:2{
-			camera 'default' location: {1111.786,1109.9386,2688.8238} target: {1111.786,1109.8916,0.0};
-		}
-		display screen parent:Screen2 fullscreen:1{}
 	}
 }
 
 
 
-
-/* Insert your model definition here */
 

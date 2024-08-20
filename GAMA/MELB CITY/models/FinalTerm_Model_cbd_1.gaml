@@ -535,7 +535,7 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 	float layerfactor<-0.001;
 	output synchronized:true{
 		
-		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:true {
+		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:false {
 			rotation angle:-21;
 			//camera 'default' location: {1058.0439,631.227,2080.5606} target: {1058.0439,631.1907,0.0};
 			//camera 'default' location: {3542.224,4531.1004,3413.7625} target: {-291.6741,-2109.4057,0.0};
