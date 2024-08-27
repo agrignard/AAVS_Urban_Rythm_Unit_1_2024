@@ -94,6 +94,7 @@ experiment life type: gui autorun:true{
 	}	
 	output synchronized:true{
 		display city_display type:3d fullscreen:true{
+			rotation angle:-21;
 			species border aspect:base ;
 			species building aspect:base visible:show_landuse;
 			species heritage_building aspect:base visible:show_heritage;

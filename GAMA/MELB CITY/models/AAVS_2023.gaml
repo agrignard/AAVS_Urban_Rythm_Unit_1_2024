@@ -14,7 +14,7 @@ global {
 	file shape_file_cbd_tram <- file("../includes/GIS/cbd_tram_custom.shp");
 	file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");
 	
-	
+
 	file point_file_outside_cbd <- file("../includes/GIS/cbd_coming_from_outside.shp");
 	file text_file_population <- file("../includes/data/Demographic_CBD.csv");
 	file text_file_car <- file("../includes/data/car_cbd.csv");
