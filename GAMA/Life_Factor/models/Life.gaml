@@ -28,9 +28,9 @@ global{
     bool show_water_model<-false;
     bool show_shadow_model<-false;
 	bool show_wind_model<-false;
-	bool show_biodiversity_model<-false;
+	bool show_biodiversity_model<-true;
 	
-	bool show_legend<-true;
+	bool show_legend<-false;
 	rgb text_color<-rgb(125,125,125);
 	string myFont;
 	
@@ -42,8 +42,11 @@ global{
 			
 		do initShadowModel;
 		do initWaterModel;
+		do triggerWaterModel(show_water_model);
 		do initWindModel(cbd_buildings);
+		do triggerWindModel(show_wind_model);
 	    do initBiodiversityModel();
+	    do triggerBiodiversityModel(show_biodiversity_model);
 	}
 	
 
@@ -88,12 +91,12 @@ global{
 	}
 }
 
-experiment life type: gui autorun:true{
+experiment life type: gui autorun:false{
 	init{
 	  gama.pref_display_numkeyscam<-false;		
 	}	
 	output synchronized:true{
-		display city_display type:3d fullscreen:true{
+		display city_display type:3d fullscreen:true background:#black axes:false autosave:true{
 			rotation angle:-21;
 			species border aspect:base ;
 			species building aspect:base visible:show_landuse;

@@ -19,7 +19,7 @@ global{
 	file cbd_wind_bounds <- file ("../includes/GIS/microclimate/Wind/wind_startbounds.shp");
 	
 	bool show_avgwindspeed<-false;
-	bool show_avgwinddirection<-true;
+	bool show_avgwinddirection<-false;
 	bool show_windborder<-false;
 	bool show_global_wind_flow<-false;
 	bool show_global_wind_point<-false;
@@ -188,7 +188,7 @@ species global_wind_point {
 species windy_building{
 	int mydepth;
 	aspect base{
-		draw shape color:rgb(175,102,86) depth:mydepth;
+		draw shape color:rgb(175,102,86) depth:0;
 	}	
 }
 

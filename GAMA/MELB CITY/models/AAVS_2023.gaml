@@ -12,6 +12,7 @@ global {
 	file shape_file_buildings <- file("../includes/GIS/cbd_buildings.shp");
 	file shape_file_cbd_traffic <- file("../includes/GIS/cbd_networks.shp");
 	file shape_file_cbd_tram <- file("../includes/GIS/cbd_tram_custom.shp");
+	file shape_file_cbd_car <- file("../includes/GIS/cbd_car_custom.shp");
 	file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");
 	file shape_file_hack <- file("../includes/GIS/hack.shp");
 	file shape_file_trees <- file("../includes/GIS/Tree/cbd_tree.shp");
@@ -27,11 +28,12 @@ global {
 	
 	
 	//TEMPORAL 
-	float step <- 10 #sec;
+	float step <- 2 #sec;
 	field cell <- field(300,300);
 	date starting_date <- date([2023,7,14,6,0,0]);
 
 	int nb_tram <- 50;
+	int nb_car <- 100;
 	int nb_bike <- 100;
 	int nb_bus <- 50;
 	float min_tram_speed <- 10.0 #km / #h;
@@ -116,7 +118,7 @@ global {
 	map<rgb,string> legends_pie <- [rgb(71,42,22)::"car",rgb(161,106,69)::"bike", rgb(112,76,51)::"tram",rgb(237,179,140)::"bus",rgb(217,145,93)::"walk", rgb(244,169,160)::"other"];
 	map<rgb,string> legend_path <- [rgb (car_color)::"car",rgb(bike_color)::"bike",rgb(tram_color)::"tram", rgb(people_color)::"people",rgb(bus_color)::"bus"];
 	
-
+    list<building> carpark_cbd;
 	
 	
 	init {
@@ -124,13 +126,11 @@ global {
 		create building from:shape_file_buildings with: [type::string(read ("type"))] ;
 		list<building> residential_buildings <- building where (each.type="residential" or each.type="mixed");
 		list<building> industrial_buildings <- building  where (each.type="work" or each.type="university" or each.type="mixed") ;
-		list<building> carpark_cbd <- building  where (each.type="residential" or each.type="mixed" or each.type="carpark");
+		carpark_cbd <- building  where (each.type="residential" or each.type="mixed" or each.type="carpark");
 		
-		//create traffic system
-		create outside_gates from: point_file_outside_cbd;
-		
+		create outside_gates from:point_file_outside_cbd;
 		create tramline from:shape_file_cbd_tram;
-		
+		create carline from:shape_file_cbd_car;
 		
 		
 		create traffic_network from:shape_file_cbd_traffic with:[type::string(read ("highway"))]{
@@ -157,10 +157,10 @@ global {
 		pedestrian_network_graph <- as_edge_graph (pedestrianway);
 		list<traffic_network> bikeway <- traffic_network where (each.type="driveway");
 		bike_network_graph <- as_edge_graph (bikeway);
-		list<traffic_network> carway <- traffic_network where (each.type="driveway");
-		car_network_graph <- as_edge_graph (carway);
-		list<traffic_network> busway <- traffic_network where (each.type="driveway");
-		bus_network_graph <- as_edge_graph (busway);
+		//list<traffic_network> carway <- traffic_network where (each.type="driveway");
+		car_network_graph <- as_edge_graph (carline);
+		/*list<traffic_network> busway <- traffic_network where (each.type="driveway");
+		bus_network_graph <- as_edge_graph (busway);*/
 		
 		
 		//create tree_canopy from: shape_file_trees;
@@ -195,26 +195,34 @@ global {
 		}	
 		
 
-		create tram number: nb_tram {
+		create tram number:nb_tram {
 			location<-any_location_in(one_of(tramline));
 		// add loop break function to distribute tram
 
 		}
-		create bus number:nb_bus{
+		/*create bus number:nb_bus{
 			location <- any_location_in (one_of(bus_network_graph));
-		}
+		}*/
 
+		/*create car number:nb_car{
+			location<-any_location_in(one_of(carline));
+		}*/
 		//create car from the car file
 		int ratio_of_car<-1000;
 		matrix data_car <- matrix(text_file_car);
 		loop i from: 0 to: data_car.rows -1{
 			create car number: int(data_car[1,i])/ratio_of_car {
 				car_group <- int(i+1);
-				if(car_group=1){
+				//location <- any_location_in (one_of(carpark_cbd));
+				//location <- any_location_in (one_of(car_network_graph));
+				
+				/*if(car_group=1){
 					location <- any_location_in (one_of(carpark_cbd));
+					self.color<-#orange;
 				} else {
 					location <- any_location_in (one_of(outside_gates));
-				}
+					self.color<-#pink;
+				}*/
 			}
 		}
 		
@@ -226,19 +234,26 @@ global {
 	reflex pollution_evolution {
 		//ask all cells to decrease their level of pollution
 		cell <- cell * 0.95;
-	
 		//diffuse the pollutions to neighbor cells
 		diffuse var: pollution on: cell proportion: 0.9;
 	}
 	
-	reflex updateCar{
-		ask rnd(2) among car{
+	/*reflex updateCar{
+		int car_group;
+		ask 1 among car{
+			car_group<-self.car_group;
 			do die;
 		}
-		create car number: rnd(2) {
-		  location <- any_location_in (one_of(building));
+		create car number: 1 {
+		  if(car_group=1){
+					location <- any_location_in (one_of(carpark_cbd));
+					self.color<-#orange;
+				} else {
+					location <- any_location_in (one_of(outside_gates));
+					self.color<-#pink;
+				}
         }
-	}
+	}*/
 	reflex updateBike{
 		ask rnd(2) among bike{
 			do die;
@@ -363,7 +378,17 @@ species tramline{
 		draw shape color:path_type_color["tram"] width:network_line_width;
 	}
 }
-species outside_gates;
+
+species carline{
+	aspect base {
+		draw shape color:path_type_color["car"] width:network_line_width;
+	}
+}
+species outside_gates{
+	aspect base{
+		draw circle(100) color:#pink;
+	}
+}
 
 species sensor{
 	string name;
@@ -417,15 +442,34 @@ species people skills:[moving] {
 
 species tram skills:[moving] {
 	int scale<-3;
+	point target;
+	float leaving_proba <- 1.0;
 	init {
 		//vehicle_length <- 33 #m;
 		//max_speed <- 40 #km / #h;
 		//max_acceleration <- 3.5;
 	}
 	
-	reflex move when: (current_date.hour between(5,24) and simpleSimulation){
-		  write 'oh ca move les trams ou quoi?';
+	/*reflex move when: (current_date.hour between(5,24) and simpleSimulation){
 		  do wander on: tram_network_graph;	
+	}*/
+	
+	reflex leave when: (target = nil) and (flip(leaving_proba) and  simpleSimulation) {
+			target <- any_location_in(one_of(tram_network_graph));
+	}
+	
+	reflex move when: (target != nil and simpleSimulation) {
+		path path_followed <- goto(target: target, on: tram_network_graph, recompute_path: true, return_path: true);
+	    if(length(path_followed.edges)=0){
+			target <- any_location_in(one_of(tram_network_graph));
+		}
+   	    if (path_followed != nil and path_followed.shape != nil) {
+			//cell[path_followed.shape.location] <- cell[path_followed.shape.location] + 10;					
+		}
+
+		if (location = target) {
+			target <- nil;
+		} 
 	}
 
 	aspect base {
@@ -474,32 +518,33 @@ species bus skills:[driving]{
 		draw rectangle(8*scale, 2*scale) rotate: heading color:bus_color;
 	}
 }
-species car skills:[driving] {
+species car skills:[moving] {
+	rgb color;
 	int scale<-3;
 	init {
-		vehicle_length <- 15#m ;
-		max_speed <- 40 #km / #h;
-		max_acceleration <- 3.5;
+		//vehicle_length <- 15#m ;
+		//max_speed <- 40 #km / #h;
+		//max_acceleration <- 3.5;
 	}
 	int car_group;
 	point target;
 	float leaving_proba <- 1.0;
 	string state;
 	
-	reflex leave when: (target = nil) and (flip(leaving_proba)) {
-		
-		target <- any_location_in(one_of(traffic_network));
+	reflex simpleMove when:!simpleSimulation{
+		do wander on:car_network_graph;
 	}
-	//Reflex to move to the target building moving on the road network
-	reflex move when: target != nil {
-	//we use the return_path facet to return the path followed
+	
+	reflex leave when: (target = nil) and (flip(leaving_proba) and  simpleSimulation) {
+		target <- any_location_in(one_of(car_network_graph));
+	}
+	
+	reflex move when: (target != nil and simpleSimulation) {
 		path path_followed <- goto(target: target, on: car_network_graph, recompute_path: true, return_path: true);
 	    if(length(path_followed.edges)=0){
-			target <- any_location_in(one_of(traffic_network));
+			target <- any_location_in(one_of(car_network_graph));
 		}
-
-		//if the path followed is not nil (i.e. the agent moved this step), we use it to increase the pollution level of overlapping cell
-		if (path_followed != nil and path_followed.shape != nil) {
+   	    if (path_followed != nil and path_followed.shape != nil) {
 			cell[path_followed.shape.location] <- cell[path_followed.shape.location] + 10;					
 		}
 
@@ -546,11 +591,14 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 			
 			species building aspect: base visible:show_building ;
 			species building aspect: landuse visible:show_landuse position:{0,0,exploded_layer? layerfactor*cycle*0:0.0};
-			species traffic_network aspect: base visible:show_network position:{0,0,exploded_layer? layerfactor*cycle*2 :0.0};
+			//species traffic_network aspect: base visible:show_network position:{0,0,exploded_layer? layerfactor*cycle*2 :0.0};
+			species carline aspect: base visible:show_network position:{0,0,exploded_layer? layerfactor*cycle*2 :0.0};
+		    species tramline aspect: base visible:show_network position:{0,0,exploded_layer? layerfactor*cycle*2 :0.0};
+			
 			species people aspect: base visible:show_people position:{0,0,exploded_layer? layerfactor*cycle*3 :0.0};
 			species tram aspect: base visible:show_tram position:{0,0,exploded_layer? layerfactor*cycle*4 :0.0};
 			species car aspect: base visible:show_car position:{0,0,exploded_layer? layerfactor*cycle*5 :0.0};
-			species bus aspect: base visible:show_bus position:{0,0,exploded_layer? layerfactor*cycle*6 :0.0};
+			//species bus aspect: base visible:show_bus position:{0,0,exploded_layer? layerfactor*cycle*6 :0.0};
 			species bike aspect: base visible:show_bike position:{0,0,exploded_layer? layerfactor*cycle*7 :0.0};
 			species tree aspect: useful_lif visible:show_tree position:{0,0,exploded_layer? layerfactor*cycle*7 :0.0};
 		    species tree aspect: family visible:show_tree_family position:{0,0,exploded_layer? layerfactor*cycle*8 :0.0};
@@ -563,7 +611,6 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 			event "t"  {show_tram<-!show_tram;}
 			event "c"  {show_car<-!show_car;}
 			event "b"  {show_bike<-!show_bike;}
-			event "u"  {show_bus<-!show_bus;}
 			event "n"  {show_network<-!show_network;}
 			event "p"  {show_people<-!show_people;}
 			event "s"  {show_sensor<-!show_sensor;}
@@ -601,8 +648,8 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
                 draw "(T)RAM (" + show_tram + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
                 y<-y+gapBetweenWord;
                 draw "(C)AR (" + show_car + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                draw "B(U)S (" + show_bus + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+              //  y<-y+gapBetweenWord;
+               // draw "B(U)S (" + show_bus + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
                 y<-y+gapBetweenWord;
                 draw "(B)IKE (" + show_bike + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
                 y<-y+gapBetweenWord;

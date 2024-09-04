@@ -32,7 +32,7 @@ global{
 	
 	//WATER MODEL
 	reflex create_water{
-		create water {
+		create water number:2{
 			poi tmpSource<-one_of(poi where (each.type = "source"));
 			location <- tmpSource.location;
 			river_id<-tmpSource.river_id;
@@ -51,7 +51,7 @@ species water skills: [moving] {
 	}	
 	
 	aspect base {
-		draw circle(10) color: #blue /*border: #black*/;
+		draw circle(8) color: #blue /*border: #black*/;
 	}
 }
 
@@ -60,7 +60,7 @@ species poi {
 	int river_id;
 	
 	aspect base{
-		draw circle(10) color: (type="source") ? #grey : #red border: #black;		
+		draw circle(15) color: (type="source") ? #grey : #red border: #black;		
 	}	
 }
 
@@ -68,7 +68,7 @@ species poi {
 
 species waste_water_channel{
 	aspect base {
-		draw shape width:1 color: #darkblue;		
+		draw shape width:1 color: #blue;		
 	}
 }
 

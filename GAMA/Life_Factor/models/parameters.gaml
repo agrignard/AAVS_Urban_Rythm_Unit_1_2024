@@ -33,7 +33,7 @@ global{
 
 species border {
 	aspect base {
-		draw shape color:#blue width:2 wireframe:true;
+		draw shape color:#gray width:2 wireframe:true;
 	}
 }
 
