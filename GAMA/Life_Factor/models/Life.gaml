@@ -18,6 +18,7 @@ global{
 		
 	
 	geometry shape <- envelope(shape_file_bounds);
+	bool show_all_scenario<-true;
 	bool show_scenario_1<-false;
 	bool show_scenario_2<-false;
 	bool show_scenario_3<-false;
@@ -47,12 +48,20 @@ global{
 		do triggerWindModel(show_wind_model);
 	    do initBiodiversityModel();
 	    do triggerBiodiversityModel(show_biodiversity_model);
+	    if(show_all_scenario){
+	    	do createAllScenarios;
+	    }
 	}
 	
+	action createAllScenarios{
+		do createScenario("Abeckett");
+		do createScenario("China Town");
+		do createScenario("Parliament");
+	}
 
 	//CREATE SCENARIO
 	action createScenario(string _name){
-		ask proposal where (each.name=_name){
+		ask proposal where (each.name=_name and each.type="Green"){
 			create green with:[type::_name,shape::self.shape];
 		}
 	}
@@ -96,13 +105,12 @@ experiment life type: gui autorun:false{
 	  gama.pref_display_numkeyscam<-false;		
 	}	
 	output synchronized:true{
-		display city_display type:3d fullscreen:true background:#black axes:false autosave:true{
+		display city_display type:3d fullscreen:true background:#black axes:false autosave:false{
 			rotation angle:-21;
 			species border aspect:base ;
 			species building aspect:base visible:show_landuse;
 			species heritage_building aspect:base visible:show_heritage;
 			species shadow aspect:base visible:show_shadow;
-			//species proposal aspect:base;
 			species waste_water_channel aspect:base visible:show_water_channel;
 			species poi aspect:base visible:show_poi;
 			species water aspect:base visible:show_water;
@@ -120,7 +128,6 @@ experiment life type: gui autorun:false{
 		
 			species trees aspect:base visible:show_tree;
 			species green aspect:base visible:show_green;
-			species bird aspect:base  visible:show_bird;
 			
 			event "1"  {show_shadow_model<-!show_shadow_model;
 				if(show_shadow_model){

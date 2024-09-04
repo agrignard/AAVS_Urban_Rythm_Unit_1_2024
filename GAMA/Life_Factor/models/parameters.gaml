@@ -15,7 +15,7 @@ global{
   file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");	
   file cbd_buildings <- file("../includes/GIS/cbd_buildings.shp");
   file cbd_buildings_heritage <- file("../includes/GIS/cbd_buildings_heritage.shp");
-  file cbd_proposals<-file("../includes/GIS/cbd_proposals.shp");
+  file cbd_proposals<-file("../includes/GIS/cbd_proposalunion.shp");
   file cbd_trees <- file("../includes/GIS/cbd_trees.shp");	
 		
 	
