@@ -40,6 +40,8 @@ global{
 		create building from: cbd_buildings with: [type::string(read ("predominan"))] ;
 		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;	
 	    create proposal from: cbd_proposals with: [type::string(read ("type")),name::string(read ("name")),height::float(read ("height"))] ;
+		create tree from: shape_file_trees;
+		list<string> families <- remove_duplicates(tree collect each.family);
 			
 		do initShadowModel;
 		do initWaterModel;
@@ -126,7 +128,8 @@ experiment life type: gui autorun:false{
 			species bird_gate aspect:base position:{0,0,0.01} visible:show_bird_gate;	
 			species bird aspect:base  position:{0,0,0.01} visible:show_bird;
 		
-			species trees aspect:base visible:show_tree;
+			species tree aspect: useful_lif visible:show_tree;
+		    species tree aspect: family visible:show_tree_family;
 			species green aspect:base visible:show_green;
 			
 			event "1"  {show_shadow_model<-!show_shadow_model;
@@ -192,6 +195,8 @@ experiment life type: gui autorun:false{
 			event "p"  {show_poi<-!show_poi;}
 			event "b"  {show_bird<-!show_bird;}
 			event "g"  {show_green<-!show_green;}
+			event "e"  {show_tree<-!show_tree;}
+			event "f"  {show_tree_family<-!show_tree_family;}
 			
 			overlay position: { 50#px,50#px} size: { 1 #px, 1 #px } background: # black border: #black rounded: false
 			{
@@ -230,6 +235,43 @@ experiment life type: gui autorun:false{
                
                 if(show_biodiversity_model){
                 	y<-y+gapBetweenWord;
+                	draw "(T)REE (" + show_tree + ")" at: { x+tabGap,y} color: model_color["biodiversity"] font: font(myFont, uxTextSize, #bold);
+                	y<-y+gapBetweenWord;
+                	draw "TREE (F)AMILY (" + show_tree_family + ")" at: { x+tabGap,y} color: model_color["biodiversity"] font: font(myFont, uxTextSize, #bold);
+                	y<-y+gapBetweenWord;
+                	if (show_tree_family){
+                	 y <- y + gapBetweenWord;
+                	 draw "TREE SPECIES" at: { 60#px, y} color: text_color font: font(myFont, 32, #bold);
+            		//for each possible type, we draw a square with the corresponding color and we write the name of the type
+   					y <- y + 40#px;
+	                loop g over: group_to_color.keys
+	                {
+	                    draw circle(10#px) at: { 20#px, y } color: group_to_color[g] border: #white;
+	                    draw family_int_to_group[g] at: {40#px, y + 4#px } color: text_color font: font(myFont, 18, #bold);
+	                     y <- y + 25#px;	
+	                }
+	                 if(show_tree){
+                	y <- y + 40#px;
+                	draw "TREE LIFESPAN" at: { 60#px, y} color: text_color font: font(myFont, 30, #bold);
+                	y <- y + 40#px;
+	            	//for each possible type, we draw a square with the corresponding color and we write the name of the type
+	                loop type over: uselif_color.keys
+	                {
+	                    
+	                    if(type=''){
+	                     draw circle(10#px) at: { 20#px, y } color: uselif_color[type] border: #white;
+	                     draw "Unknown" at: { 40#px, y + 4#px } color:text_color font: font(myFont, 18, #bold);
+	                     y <- y + 25#px;	
+	                    }else{
+	                    	draw circle(10#px) at: { 20#px, y } color: uselif_color[type] border: #white;
+	                        draw type at: { 40#px, y + 4#px } color:text_color font: font(myFont, 18, #bold);
+	                        y <- y + 25#px;
+	                    }
+	                    
+	                }
+                }
+                	
+                }
                 	draw "(G)REEN (" + show_green + ")" at: { x+tabGap,y} color: model_color["biodiversity"] font: font(myFont, uxTextSize, #bold);
 	                y<-y+gapBetweenWord;
 	                draw "(B)IRD (" + show_bird + ")" at: { x+tabGap,y} color: model_color["biodiversity"] font: font(myFont, uxTextSize, #bold);

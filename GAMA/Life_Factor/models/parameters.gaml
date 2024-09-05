@@ -74,10 +74,5 @@ species proposal{
 
 
 
-species trees {
-	aspect base {
-		draw circle(3) color:#green;
-	}
-}
 
 
