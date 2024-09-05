@@ -16,21 +16,22 @@ global {
 	file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");
 	file shape_file_hack <- file("../includes/GIS/hack.shp");
 
-	
-
 	file point_file_outside_cbd <- file("../includes/GIS/cbd_coming_from_outside.shp");
 	file text_file_population <- file("../includes/data/Demographic_CBD.csv");
 	file text_file_car <- file("../includes/data/car_cbd.csv");
-	
-
-	
+		
 	geometry shape <- envelope(shape_file_bounds);
 	
 	
-	//TEMPORAL 
-	float step <- 3600 #sec;
-	field cell <- field(300,300);
+   //TEMPORAL 
+	float step <- 1 #sec;
 	date starting_date <- date([2023,7,14,6,0,0]);
+	
+	field car_cell <- field(300,300);
+	int size <- 300;
+	field instant_heatmap <- field(size, size);
+	field history_heatmap <- field(size, size);
+	
 
 	int nb_tram <- 50;
 	int nb_car <- 100;
@@ -49,33 +50,29 @@ global {
 	graph tram_network_graph;
 	graph bike_network_graph;
 	graph pedestrian_network_graph;
-	
-	map<int,rgb> age_color<-[1::rgb(33, 158, 188), 2::rgb(33, 158, 188),3::rgb(33, 158, 188), 4::rgb(33, 158, 188),5::rgb(33, 158, 188),5::rgb(33, 158, 188),6::rgb(33, 158, 188)];
-	map<int,float> grouptospeed<-[1::3.3 #km / #h, 2::4.5 #km / #h,3::4.5 #km / #h, 4::3.3 #km / #h,5::3.3 #km / #h];
-   
-	
+		
 	map<string,rgb> landuse_color<-["residential"::rgb(231, 111, 81),"mixed"::rgb(244, 162, 97),"university"::rgb(38, 70, 83), "office"::rgb(42, 157, 143), "retail"::rgb(233, 196, 106)
 		, "entertainment"::rgb(33, 158, 188),"carpark"::rgb(92, 103, 125),"park"::rgb(153, 217, 140)];
 	map<string,rgb> building_usage_color<-["residential"::rgb(201, 81, 61),"mixed"::rgb(244, 162, 97),"university"::rgb(38, 70, 83),  "work"::rgb(42, 157, 143), "retail"::rgb(30,233,182),"entertainment"::rgb(33, 158, 188)];	
 	map<string,rgb> path_type_color<-["car"::rgb(car_color),"bike"::rgb(bike_color),"tram"::rgb(tram_color),"people"::rgb(people_color),"bus"::rgb(bus_color)];
 
    
-    //ABM
-    bool simpleSimulation<-true;   
 	
 	//UX/UI
 	bool show_building<-false;
 	bool show_landuse<-true;
-	bool show_tram<-true;
-	bool show_car<-true;
-	bool show_bike<-true;
+	bool show_tram<-false;
+	bool show_car<-false;
+	bool show_bike<-false;
 	bool show_people<-true;
 	bool show_network<-true;
 	bool show_mode_legend<-false;
-	bool show_legend<-true;
+	bool show_legend<-false;
 	
 	//v2
-	bool show_heatmap<-false;
+	bool show_car_heatmap<-false;
+	bool show_instant_heatmap<-false;
+	bool show_aggregated_heatmap<-false;
 		
 	//VISUAL
 	rgb background_color<-rgb(0,0,0);
@@ -112,13 +109,7 @@ global {
 		list<building> residential_buildings <- building where (each.type="residential" /*or each.type="mixed"*/);
 		list<building> industrial_buildings <- building  where (/*each.type="work" or*/ each.type="university" /*or each.type="mixed"*/) ;
 		carpark_cbd <- building  where (each.type="residential" or each.type="mixed" or each.type="carpark");
-		
-		create outside_gates from:point_file_outside_cbd;
-		create tramline from:shape_file_cbd_tram;
-		create carline from:shape_file_cbd_car;
-		
-		
-		create traffic_network from:shape_file_cbd_traffic with:[type::string(read ("highway"))]{
+		create traffic_network from:shape_file_cbd_traffic  with:[type::string(read ("highway"))]{
 			if (type="tramway"){
 				mode<-"tram";
 			}
@@ -129,6 +120,10 @@ global {
 				mode<-"people";
 			}
 		}
+		
+		create outside_gates from:point_file_outside_cbd;
+		create tramline from:shape_file_cbd_tram;
+		create carline from:shape_file_cbd_car;
 		
 		
 		ask traffic_network{
@@ -145,14 +140,11 @@ global {
 		//list<traffic_network> carway <- traffic_network where (each.type="driveway");
 		car_network_graph <- as_edge_graph (carline);
 		
-
-	
-		
 		
 		//create people from the demographic file
 		matrix data_people <- matrix(text_file_population);
 		loop i from: 0 to: data_people.rows -1{
-			create people number:int(data_people[1,i])/100{
+			create people number:int(data_people[1,i])/10{
 				age_group <- int(i+1);
 				speed <- float(data_people[2,i]);
 				if(age_group=6){
@@ -161,8 +153,13 @@ global {
 					location <- any_location_in (one_of(residential_buildings));
 				}
 				taffic_mode<<+ [int(data_people[3,i]),int(data_people[4,i]),int(data_people[5,i]),int(data_people[6,i]),int(data_people[7,i])];
-				start_work <- int(data_people[8,i]);
-				end_work <- int(data_people[9,i]);
+			    start_work <- rnd(int(data_people[8,i]),int(data_people[9,i]));
+			    end_work <- rnd(int(data_people[9,i]),int(data_people[10,i]));
+			    start_work_minute<-rnd(60);
+			    end_work_minute<-rnd(60);
+				//start_work <- int(rnd (data_people[8,i], data_people[9,i]));
+		        //end_work <- int(rnd(data_people[10,i], data_people[11,i]));
+		
 				living_place <- one_of(residential_buildings);
 				working_place <- one_of(industrial_buildings);
 				objective <- "resting";
@@ -211,11 +208,19 @@ global {
 		create hack from:shape_file_hack;
 	}
 	
-	reflex pollution_evolution {
+	reflex pollution_evolution{
 		//ask all cells to decrease their level of pollution
-		cell <- cell * 0.95;
+		car_cell <- car_cell * 0.95;
 		//diffuse the pollutions to neighbor cells
-		diffuse var: pollution on: cell proportion: 0.9;
+		diffuse var: pollution on: car_cell proportion: 0.9;
+	}
+	
+	reflex update {
+		instant_heatmap[] <- 0 ;
+		ask people {
+			instant_heatmap[location] <- instant_heatmap[location] + 10;
+			history_heatmap[location] <- history_heatmap[location] + 1;
+		}
 	}
 	
 	/*reflex updateCar{
@@ -242,7 +247,7 @@ species building {
 	rgb color;
 	
 	aspect base {
-		draw shape color:building_color;
+		draw shape  color:building_color;
 	}
 	
 	aspect landuse{
@@ -328,7 +333,9 @@ species people skills:[moving] {
 	building living_place <- nil ;
 	building working_place <- nil ;
 	int start_work ;
+	int start_work_minute;
 	int end_work  ;
+	int end_work_minute;
 	string objective ; 
 	point the_target <- nil ;
 	int age_group;
@@ -336,18 +343,18 @@ species people skills:[moving] {
 	
 	bool justwonder;
 		
-	reflex time_to_work when: current_date.hour = start_work and objective = "resting"{
+	reflex time_to_work when: current_date.hour = start_work and current_date.minute = start_work_minute and objective = "resting"{
 		objective <- "working" ;
 		the_target <- any_location_in (working_place);
 	}
 		
-	reflex time_to_go_home when: current_date.hour = end_work and objective = "working"{
+	reflex time_to_go_home when: current_date.hour = end_work and current_date.minute = end_work_minute and objective = "working"{
 		objective <- "resting" ;
 		the_target <- any_location_in (living_place); 
 	} 
 	 
 	reflex move when: the_target != nil {
-		do goto target: the_target  on: pedestrian_network_graph ; 
+		do goto target: the_target  on: pedestrian_network_graph speed:speed; 
 		if the_target = location {
 			the_target <- nil ;
 		}
@@ -359,10 +366,6 @@ species people skills:[moving] {
 	
 	aspect base{
 		draw circle(4) color: people_color ;
-	}
-	
-	aspect age {
-		draw circle(4) color: age_color[age_group] ;
 	}
 }
 
@@ -380,11 +383,11 @@ species tram skills:[moving] {
 		  do wander on: tram_network_graph;	
 	}*/
 	
-	reflex leave when: (target = nil) and (flip(leaving_proba) and  simpleSimulation) {
+	reflex leave when: (target = nil) and (flip(leaving_proba)) {
 			target <- any_location_in(one_of(tram_network_graph));
 	}
 	
-	reflex move when: (target != nil and simpleSimulation) {
+	reflex move when: (target != nil) {
 		path path_followed <- goto(target: target, on: tram_network_graph, recompute_path: true, return_path: true);
 	    if(length(path_followed.edges)=0){
 			target <- any_location_in(one_of(tram_network_graph));
@@ -416,22 +419,18 @@ species car skills:[moving] {
 	point target;
 	float leaving_proba <- 1.0;
 	string state;
-	
-	reflex simpleMove when:!simpleSimulation{
-		do wander on:car_network_graph;
-	}
-	
-	reflex leave when: (target = nil) and (flip(leaving_proba) and  simpleSimulation) {
+
+	reflex leave when: (target = nil) and (flip(leaving_proba)) {
 		target <- any_location_in(one_of(car_network_graph));
 	}
 	
-	reflex move when: (target != nil and simpleSimulation) {
+	reflex move when: (target != nil) {
 		path path_followed <- goto(target: target, on: car_network_graph, recompute_path: true, return_path: true);
 	    if(length(path_followed.edges)=0){
 			target <- any_location_in(one_of(car_network_graph));
 		}
    	    if (path_followed != nil and path_followed.shape != nil) {
-			cell[path_followed.shape.location] <- cell[path_followed.shape.location] + 10;					
+			car_cell[path_followed.shape.location] <- car_cell[path_followed.shape.location] + 10;					
 		}
 
 		if (location = target) {
@@ -448,7 +447,7 @@ species car skills:[moving] {
 species bike skills:[driving] {
 
 	//Reflex to move to the target building moving on the road network
-	reflex move when:simpleSimulation{
+	reflex move{
 	do wander on:bike_network_graph;
 	}
 
@@ -468,23 +467,27 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 	float minimum_cycle_duration<-0.05;
 	output synchronized:true{
 		
-		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:false {
+		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:true fullscreen:true{
 			rotation angle:-21;
 			
 			//species building aspect: base visible:show_building ;
-			species building aspect: landuse visible:show_landuse ;
+			species building aspect: landuse visible:show_landuse transparency:0.5;
 			//species traffic_network aspect: base visible:show_network ;
 			species carline aspect: base visible:show_network ;
 		    species tramline aspect: base visible:show_network ;
 			
-			species people aspect: age visible:show_people ;
+			species people aspect:base visible:show_people ;
 			species tram aspect: base visible:show_tram ;
 			species car aspect: base visible:show_car ;
 			species bike aspect: base visible:show_bike ;
 			
 			
 
-			mesh cell scale: 9 triangulation: true transparency: 0.4 smooth: 3 above: 0.8 color: pal visible:show_heatmap;
+			mesh car_cell scale: 9 triangulation: true transparency: 0.4 smooth: 3 above: 0.8 color: pal visible:show_car_heatmap;
+			mesh instant_heatmap scale: 0 color: palette([ #black, #black, #orange, #orange, #red, #red, #red]) smooth: 3 visible:show_instant_heatmap;
+	        mesh history_heatmap scale: 0.01 color: gradient([#black::0, #cyan::0.5, #red::1]) transparency: 0.2 position: {0, 0, 0.001} smooth:3 visible:show_aggregated_heatmap;
+	
+			
 			species hack aspect:base position:{0,0,0.001};
 			
 		
@@ -494,7 +497,9 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 			event "b"  {show_bike<-!show_bike;}
 			event "n"  {show_network<-!show_network;}
 			event "p"  {show_people<-!show_people;}
-			event "h"  {show_heatmap<-!show_heatmap;}
+			event "h"  {show_car_heatmap<-!show_car_heatmap;}
+			event "i"  {show_instant_heatmap<-!show_instant_heatmap;}
+			event "a"  {show_aggregated_heatmap<-!show_aggregated_heatmap;}
 			
 			
 			overlay position: { 50#px,50#px} size: { 1 #px, 1 #px } background: # black border: #black rounded: false
@@ -533,7 +538,11 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
                 /*y<-y+gapBetweenWord;
                 draw "(S)ENSOR (" + show_sensor + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
                 y<-y+gapBetweenWord;*/
-                draw "(H)EATMAP (" + show_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                draw "CAR (H)EATMAP (" + show_car_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                y<-y+gapBetweenWord;
+                 draw "(I)NSTANT HEATMAP (" + show_instant_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+                y<-y+gapBetweenWord;
+                 draw "(A)GGREGATED HEATMAP (" + show_aggregated_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
                 y<-y+gapBetweenWord;
                 
                 if(show_mode_legend){
