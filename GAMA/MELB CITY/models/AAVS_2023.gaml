@@ -467,7 +467,7 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 	float minimum_cycle_duration<-0.05;
 	output synchronized:true{
 		
-		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:true fullscreen:true{
+		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:false fullscreen:true{
 			rotation angle:-21;
 			
 			//species building aspect: base visible:show_building ;

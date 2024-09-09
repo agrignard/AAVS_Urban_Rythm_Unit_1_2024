@@ -16,7 +16,6 @@ import "./biodiversity.gaml"
 
 global{
 		
-	
 	geometry shape <- envelope(shape_file_bounds);
 	bool show_all_scenario<-true;
 	bool show_scenario_1<-false;
@@ -27,8 +26,8 @@ global{
 	bool show_landuse<-false;
 	bool show_heritage<-false;
     bool show_water_model<-false;
-    bool show_shadow_model<-false;
-	bool show_wind_model<-true;
+    bool show_shadow_model<-true;
+	bool show_wind_model<-false;
 	bool show_biodiversity_model<-false;
 	
 	bool show_legend<-false;
@@ -113,6 +112,8 @@ experiment life type: gui autorun:false{
 			species building aspect:base visible:show_landuse;
 			species heritage_building aspect:base visible:show_heritage;
 			species shadow aspect:base visible:show_shadow;
+			species darkarea aspect:base visible:show_shadow;
+			species lightarea aspect:base visible:show_shadow;
 			species waste_water_channel aspect:base visible:show_water_channel;
 			species poi aspect:base visible:show_poi;
 			species water aspect:base visible:show_water;
