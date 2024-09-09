@@ -39,6 +39,7 @@ species border {
 
 
 species building {
+	int depth;
 	string type;
 	rgb color;
 

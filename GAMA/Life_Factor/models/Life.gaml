@@ -28,8 +28,8 @@ global{
 	bool show_heritage<-false;
     bool show_water_model<-false;
     bool show_shadow_model<-false;
-	bool show_wind_model<-false;
-	bool show_biodiversity_model<-true;
+	bool show_wind_model<-true;
+	bool show_biodiversity_model<-false;
 	
 	bool show_legend<-false;
 	rgb text_color<-rgb(125,125,125);
@@ -37,7 +37,7 @@ global{
 	
 	init{
 		create border from: shape_file_bounds ;		
-		create building from: cbd_buildings with: [type::string(read ("predominan"))] ;
+		create building from: cbd_buildings with: [type::string(read ("predominan")),depth::int(read ("structur_1"))] ;
 		create heritage_building from: cbd_buildings_heritage with: [type::string(read ("HERIT_OBJ"))] ;	
 	    create proposal from: cbd_proposals with: [type::string(read ("type")),name::string(read ("name")),height::float(read ("height"))] ;
 		create tree from: shape_file_trees;

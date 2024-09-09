@@ -17,6 +17,7 @@ global{
 	file cbd_wind_direction <- file("../includes/GIS/microclimate/Wind/wind_directionanchors.shp");
 	file cbd_windpoint <- file ("../includes/GIS/microclimate/Wind/wind_points.shp");
 	file cbd_wind_bounds <- file ("../includes/GIS/microclimate/Wind/wind_startbounds.shp");
+	file cbd_wind_tunnel <- file ("../includes/GIS/microclimate/Wind/cdb_wind_tunnel.shp");
 	
 	bool show_avgwindspeed<-false;
 	bool show_avgwinddirection<-false;
@@ -27,11 +28,11 @@ global{
 	bool show_local_wind_particle<-false;	
 	
 	
-	bool local_wind_model<-false;
+	bool local_wind_model<-true;
 	int maximal_turn <- 90; //in degree
 	int cohesion_factor <- 10;
 	//Size of the windparticle
-	float windparticle_size <- 2.0;
+	float windparticle_size <- 0.1;
 	//Space without buildings
 	geometry free_space;
 	//Number of windparticle agent
@@ -78,11 +79,18 @@ global{
 		create wind_avgdirection from: cbd_wind_direction;
 		create windborder from:cbd_wind_bounds;
 		
-		create windy_building from: _building with: [mydepth::100] {
-			if flip(0.95){
-				do die;
+		create wind_tunnel_area from:cbd_wind_tunnel; 
+		
+		create windy_building from: _building with: [depth::int(read ("structur_1"))]{
+			if (depth<180){
+				//do die;
+			}
+			if !(bool(wind_tunnel_area overlapping self)){
+			  do die;	
 			}
 		}
+
+		
 				
 		do initFreeSpace;
 		
@@ -186,9 +194,9 @@ species global_wind_point {
 }
 
 species windy_building{
-	int mydepth;
+	int depth;
 	aspect base{
-		draw shape color:rgb(175,102,86) depth:0;
+		draw shape color:rgb(175,102,86) depth:0 wireframe:true width:3;
 	}	
 }
 
@@ -230,5 +238,11 @@ species windborder {
 	}
 }
 
+
+species wind_tunnel_area{
+	aspect base {
+		draw shape color:#blue width:0;
+	}	
+}
 
 
