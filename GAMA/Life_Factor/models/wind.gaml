@@ -28,7 +28,7 @@ global{
 	bool show_local_wind_particle<-false;	
 	
 	
-	bool local_wind_model<-true;
+	bool local_wind_model<-false;
 	int maximal_turn <- 90; //in degree
 	int cohesion_factor <- 10;
 	//Size of the windparticle
@@ -169,7 +169,7 @@ species windparticle skills:[moving]{
 	}
 	
 	aspect abstract {
-		draw triangle(30) rotate:heading+90 color:rgb(219,118,94);
+		draw triangle(30) rotate:heading+90 color:model_color["wind"];
 	}
 }
 
@@ -180,8 +180,8 @@ species global_wind_flow skills: [moving]{
 	}	
 	
 	aspect base{
-		draw rectangle(5,30) rotate:heading+90 color:rgb(175,102,86);
-		draw triangle(30) rotate:heading+90 color:rgb(175,102,86);
+		draw rectangle(5,30) rotate:heading+90 color:model_color["wind"];
+		draw triangle(30) rotate:heading+90 color:model_color["wind"];
 	}	
 }
 species global_wind_point {
@@ -196,7 +196,7 @@ species global_wind_point {
 species windy_building{
 	int depth;
 	aspect base{
-		draw shape color:rgb(175,102,86) depth:0 wireframe:true width:3;
+		draw shape color:model_color["wind"] depth:0 wireframe:true width:3;
 	}	
 }
 

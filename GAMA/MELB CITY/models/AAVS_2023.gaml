@@ -13,6 +13,11 @@ global {
 	file shape_file_cbd_traffic <- file("../includes/GIS/cbd_networks.shp");
 	file shape_file_cbd_tram <- file("../includes/GIS/cbd_tram_custom.shp");
 	file shape_file_cbd_car <- file("../includes/GIS/cbd_car_custom.shp");
+	file shape_file_cbd_car_poi <- file("../includes/GIS/cbd_traffic_poi.shp");
+	file shape_file_cbd_pollution <- file("../includes/GIS/cbd_pollution.shp");
+	file shape_file_cbd_traffic_jam <- file("../includes/GIS/cbd_traffic.shp");
+	
+	
 	file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");
 	file shape_file_hack <- file("../includes/GIS/hack.shp");
 
@@ -62,15 +67,15 @@ global {
 	bool show_building<-false;
 	bool show_landuse<-true;
 	bool show_tram<-false;
-	bool show_car<-false;
+	bool show_car<-true;
 	bool show_bike<-false;
-	bool show_people<-true;
+	bool show_people<-false;
 	bool show_network<-true;
 	bool show_mode_legend<-false;
 	bool show_legend<-false;
 	
 	//v2
-	bool show_car_heatmap<-false;
+	bool show_car_heatmap<-true;
 	bool show_instant_heatmap<-false;
 	bool show_aggregated_heatmap<-false;
 		
@@ -124,6 +129,7 @@ global {
 		create outside_gates from:point_file_outside_cbd;
 		create tramline from:shape_file_cbd_tram;
 		create carline from:shape_file_cbd_car;
+		create pollution from:shape_file_cbd_pollution;
 		
 		
 		ask traffic_network{
@@ -184,14 +190,26 @@ global {
 		/*create car number:nb_car{
 			location<-any_location_in(one_of(carline));
 		}*/
+		create car_poi from:shape_file_cbd_car_poi with:[type::string(read("type"))];
+		
+		
 		//create car from the car file
 		int ratio_of_car<-1000;
 		matrix data_car <- matrix(text_file_car);
 		loop i from: 0 to: data_car.rows -1{
 			create car number: int(data_car[1,i])/ratio_of_car {
 				car_group <- int(i+1);
-				//location <- any_location_in (one_of(carpark_cbd));
-				//location <- any_location_in (one_of(car_network_graph));
+				_id<-1+rnd(9);
+				speed<-2+rnd(10.0);
+				source<- first(car_poi where ((each.type="source") and (each.id=_id))).location;
+				outlet<- first(car_poi where ((each.type="outlet") and (each.id=_id))).location;
+				if flip(0.8){
+					type<-"traffic";
+					location<-source;
+				}
+				else{
+					location <- any_location_in (one_of(car_network_graph));	
+				}
 				
 				/*if(car_group=1){
 					location <- any_location_in (one_of(carpark_cbd));
@@ -410,6 +428,12 @@ species tram skills:[moving] {
 species car skills:[moving] {
 	rgb color;
 	int scale<-3;
+	int id;
+	int _id;
+	point source;
+	point outlet;
+	string type;
+	float speed;
 	init {
 		//vehicle_length <- 15#m ;
 		//max_speed <- 40 #km / #h;
@@ -421,13 +445,22 @@ species car skills:[moving] {
 	string state;
 
 	reflex leave when: (target = nil) and (flip(leaving_proba)) {
-		target <- any_location_in(one_of(car_network_graph));
+		if(type="traffic"){
+		  target<-outlet;
+		}else{
+		  target <- any_location_in(one_of(car_network_graph));	
+		}
 	}
 	
 	reflex move when: (target != nil) {
-		path path_followed <- goto(target: target, on: car_network_graph, recompute_path: true, return_path: true);
+		path path_followed <- goto(target: target, speed:speed,on: car_network_graph, recompute_path: true, return_path: true);
 	    if(length(path_followed.edges)=0){
-			target <- any_location_in(one_of(car_network_graph));
+	    	if(type="traffic"){
+	    	  target<-source;	
+	    	}else{
+	    	  target <- any_location_in(one_of(car_network_graph));	
+	    	}
+			
 		}
    	    if (path_followed != nil and path_followed.shape != nil) {
 			car_cell[path_followed.shape.location] <- car_cell[path_followed.shape.location] + 10;					
@@ -442,6 +475,11 @@ species car skills:[moving] {
 	aspect base {
 		draw rectangle(5*scale, 2*scale) rotate: heading color:car_color ;
 	}
+}
+
+species car_poi{
+	int id;
+	string type;
 }
 
 species bike skills:[driving] {
@@ -462,12 +500,18 @@ species hack{
 	}
 }
 
+species pollution{
+	aspect base{
+		draw shape color:#orange;
+	}
+}
+
 
 experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{	
 	float minimum_cycle_duration<-0.05;
 	output synchronized:true{
 		
-		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:false fullscreen:true{
+		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:true fullscreen:true{
 			rotation angle:-21;
 			
 			//species building aspect: base visible:show_building ;
@@ -480,6 +524,7 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 			species tram aspect: base visible:show_tram ;
 			species car aspect: base visible:show_car ;
 			species bike aspect: base visible:show_bike ;
+			//species pollution aspect:base;
 			
 			
 
@@ -488,7 +533,7 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 	        mesh history_heatmap scale: 0.01 color: gradient([#black::0, #cyan::0.5, #red::1]) transparency: 0.2 position: {0, 0, 0.001} smooth:3 visible:show_aggregated_heatmap;
 	
 			
-			species hack aspect:base position:{0,0,0.001};
+			//species hack aspect:base position:{0,0,0.001};
 			
 		
 			event "l"  {show_landuse<-!show_landuse;}

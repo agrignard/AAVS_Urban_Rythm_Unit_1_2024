@@ -8,6 +8,8 @@
 
 model Life
 
+import "./parameters.gaml"
+
 /* Insert your model definition here */
 
 global{
@@ -44,7 +46,6 @@ global{
 	
 	init{
 		create border from: shape_file_bounds ;
-		create building from: cbd_buildings with: [type::string(read ("predominan")),mydepth::int(read ("footprin_1"))] ;
 		if(show_proposal){
 		  create proposal from: cbd_proposals with: [type::string(read ("type")),name::string(read ("name")),height::float(read ("height"))] ;
 		}		
@@ -88,30 +89,8 @@ global{
 	}
 }
 
-species border {
-	aspect base {
-		draw shape color:#black width:2 wireframe: true;
-	}
-}
 
-species building {
-	string type;
-	rgb color <- #lightgray ;
-	int mydepth;
-		
-	aspect base {
-		draw shape color:color;
-	}
-}
 
-species proposal{
-	string type;
-	string name;
-	float height;
-	aspect base{
-		draw shape color:(type="Green")? #green : ((type="Built")? #brown : #blue)	depth:height;
-	}
-}
 
 species bird skills:[moving]{
 	point entry_point;
@@ -149,7 +128,7 @@ species bird skills:[moving]{
 	}
 	
 	aspect base{
-		draw triangle(20) rotate: heading+90 color:hungry ? rgb(91,122,55) : (full ? rgb(100,175,116) : rgb(177,209,193)) border:#black;
+		draw triangle(20) rotate: heading+90 color:hungry ? rgb(91,122,55) : (full ? model_color["bio_green"] : rgb(177,209,193)) border:#black;
 	}
 }
 

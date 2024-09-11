@@ -26,9 +26,9 @@ global{
 	bool show_landuse<-false;
 	bool show_heritage<-false;
     bool show_water_model<-false;
-    bool show_shadow_model<-true;
+    bool show_shadow_model<-false;
 	bool show_wind_model<-false;
-	bool show_biodiversity_model<-false;
+	bool show_biodiversity_model<-true;
 	
 	bool show_legend<-false;
 	rgb text_color<-rgb(125,125,125);
@@ -97,7 +97,7 @@ global{
 	    show_bird<-value;
 	    show_bird_gate<-value;
 	    show_green<-value;
-	    show_tree<-value;
+	    //show_tree<-value;
 	}
 }
 
@@ -106,10 +106,10 @@ experiment life type: gui autorun:false{
 	  gama.pref_display_numkeyscam<-false;		
 	}	
 	output synchronized:true{
-		display city_display type:3d fullscreen:true background:#black axes:false autosave:false{
+		display city_display type:3d fullscreen:true background:#black axes:false autosave:true{
 			rotation angle:-21;
 			species border aspect:base ;
-			species building aspect:base visible:show_landuse;
+			species building aspect:wireframe visible:show_landuse;
 			species heritage_building aspect:base visible:show_heritage;
 			species shadow aspect:base visible:show_shadow;
 			species darkarea aspect:base visible:show_shadow;
@@ -196,7 +196,6 @@ experiment life type: gui autorun:false{
 			event "p"  {show_poi<-!show_poi;}
 			event "b"  {show_bird<-!show_bird;}
 			event "g"  {show_green<-!show_green;}
-			event "e"  {show_tree<-!show_tree;}
 			event "f"  {show_tree_family<-!show_tree_family;}
 			
 			overlay position: { 50#px,50#px} size: { 1 #px, 1 #px } background: # black border: #black rounded: false

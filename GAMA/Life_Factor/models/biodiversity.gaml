@@ -7,7 +7,7 @@
 
 
 model Life_Biodiversity
-
+import "./parameters.gaml"
 /* Insert your model definition here */
 
 global{
@@ -105,7 +105,7 @@ species bird skills:[moving]{
 	}
 	
 	aspect base{
-		draw triangle(20) rotate: heading+90 color:hungry ? #purple : (full ? #green : #red) border:#black;
+		draw triangle(20) rotate: heading+90 color:hungry ? #purple : (full ? model_color["bio_green"] : model_color["bio_red"]) border:#black;
 	}
 }
 

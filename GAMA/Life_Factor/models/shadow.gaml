@@ -20,7 +20,7 @@ global{
 		create shadow from: cbd_shadows;
 		create darkarea from:cbd_dark;
 		create lightarea from:cbd_light;
-		show_shadow<-true;
+		show_shadow<-false;
 	}
 	
 	
