@@ -36,7 +36,7 @@ global{
 	//Space without buildings
 	geometry free_space;
 	//Number of windparticle agent
-	int nb_windparticle <- 100;
+	int nb_windparticle <- 200;
 	//Point to evacuate
 	point target_point <- {shape.width/2, shape.height};
 	
@@ -46,14 +46,14 @@ global{
 	
 	
 	reflex create_flow{
-		create global_wind_flow {
+		create global_wind_flow{
 			global_wind_point tmpSource<-one_of(global_wind_point where (each.type = "Source"));
 			location <- tmpSource.location;
 			target <- one_of(global_wind_point where (each.type = "Target"  and (each.line_id=tmpSource.line_id)) );		
 		}
 	}
 	
-	reflex updatelocaWind when:(length(windparticle)<100 and local_wind_model=true){
+	reflex updatelocaWind when:(length(windparticle)<nb_windparticle and local_wind_model=true){
 		create windparticle{
 			location <- any_location_in(free_space);
 			target_loc<-{location.x,world.shape.height};
@@ -163,13 +163,11 @@ species windparticle skills:[moving]{
 		wind_avgspeed tmp<-wind_avgspeed first_with(each overlaps self.shape);
 		speed<-float(tmp.mySpeed);
 	}	
-	aspect base {
-		draw pyramid(size) color: color;
-		draw sphere(size/3) at: {location.x,location.y,size*0.75} color: color;
-	}
-	
+
 	aspect abstract {
-		draw triangle(30) rotate:heading+90 color:model_color["wind"];
+		if(heading!=90 or heading=0 or heading=180){
+		  draw triangle(30) rotate:heading+90 color:model_color["wind"];	
+		}	
 	}
 }
 
@@ -180,8 +178,8 @@ species global_wind_flow skills: [moving]{
 	}	
 	
 	aspect base{
-		draw rectangle(5,30) rotate:heading+90 color:model_color["wind"];
-		draw triangle(30) rotate:heading+90 color:model_color["wind"];
+		draw rectangle(5,30) rotate:heading+90 color:model_color["global_wind"];
+		draw triangle(30) rotate:heading+90 color:model_color["global_wind"];
 	}	
 }
 species global_wind_point {

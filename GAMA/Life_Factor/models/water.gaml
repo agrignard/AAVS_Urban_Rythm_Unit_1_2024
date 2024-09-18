@@ -17,6 +17,9 @@ global{
 	file cbd_water_channel <- file("../includes/GIS/microclimate/Water/cbd_water_flowroute.shp");
 	file cbd_poi_file <- shape_file("../includes/GIS/microclimate/Water/cbd_water_poi.shp");
 	graph water_channel;
+	int size <- 300;
+	field instant_water_heatmap <- field(size, size);
+	field history_water_heatmap <- field(size, size);
 
 	bool show_water_channel<-false;
 	bool show_poi<-false;
@@ -39,6 +42,17 @@ global{
 			target <- one_of(poi where ((each.type = "outlet") and (each.river_id=self.river_id))) ;
 		}
 	}
+	
+	/*reflex update_water_heatmap {
+		instant_water_heatmap[] <- 0 ;
+		ask water {
+			instant_water_heatmap[location] <- instant_water_heatmap[location] + 10;
+			history_water_heatmap[location] <- history_water_heatmap[location] + 1;
+		}
+		if (cycle=1000){
+			//do pause;
+		}
+	}*/
 }
 
 
@@ -48,6 +62,9 @@ species water skills: [moving] {
 
 	reflex move {
 		do goto target: target on: water_channel speed: 30.0;
+		if target.location = location{
+			do die;
+		}
 	}	
 	
 	aspect base {

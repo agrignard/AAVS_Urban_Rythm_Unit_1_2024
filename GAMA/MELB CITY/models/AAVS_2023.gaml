@@ -16,6 +16,8 @@ global {
 	file shape_file_cbd_car_poi <- file("../includes/GIS/cbd_traffic_poi.shp");
 	file shape_file_cbd_pollution <- file("../includes/GIS/cbd_pollution.shp");
 	file shape_file_cbd_traffic_jam <- file("../includes/GIS/cbd_traffic.shp");
+	file cbd_dark <- file("../includes/GIS/cbd_darkness.shp");	
+	file cbd_light <- file("../includes/GIS/cbd_lightness.shp");
 	
 	
 	file shape_file_bounds <- file("../includes/GIS/cbd_bounds.shp");
@@ -30,7 +32,7 @@ global {
 	
    //TEMPORAL 
 	float step <- 1 #sec;
-	date starting_date <- date([2023,7,14,6,0,0]);
+	date starting_date <- date([2024,10,1,6,0,0]);
 	
 	field car_cell <- field(300,300);
 	int size <- 300;
@@ -56,27 +58,36 @@ global {
 	graph bike_network_graph;
 	graph pedestrian_network_graph;
 		
-	map<string,rgb> landuse_color<-["residential"::rgb(231, 111, 81),"mixed"::rgb(244, 162, 97),"university"::rgb(38, 70, 83), "office"::rgb(42, 157, 143), "retail"::rgb(233, 196, 106)
-		, "entertainment"::rgb(33, 158, 188),"carpark"::rgb(92, 103, 125),"park"::rgb(153, 217, 140)];
+	map<string,rgb> landuse_color<-["retail"::rgb(233, 196, 106),"residential"::rgb(231, 111, 81),"work"::rgb(213, 186, 86),"mixed"::rgb(244, 162, 97),"university"::rgb(38, 70, 83),
+		 "entertainment"::rgb(33, 158, 188),"carpark"::rgb(92, 103, 125),"park"::rgb(153, 217, 140),"church"::rgb(42, 157, 143), "construction"::rgb(125, 125, 125)];
+		
+		
+		
 	map<string,rgb> building_usage_color<-["residential"::rgb(201, 81, 61),"mixed"::rgb(244, 162, 97),"university"::rgb(38, 70, 83),  "work"::rgb(42, 157, 143), "retail"::rgb(30,233,182),"entertainment"::rgb(33, 158, 188)];	
 	map<string,rgb> path_type_color<-["car"::rgb(car_color),"bike"::rgb(bike_color),"tram"::rgb(tram_color),"people"::rgb(people_color),"bus"::rgb(bus_color)];
 
    
 	
 	//UX/UI
-	bool show_building<-false;
+	bool show_building<-true;
 	bool show_landuse<-true;
 	bool show_tram<-false;
-	bool show_car<-true;
+	bool show_car<-false;
 	bool show_bike<-false;
-	bool show_people<-false;
-	bool show_network<-true;
+	bool show_people<-true;
+	bool show_network<-false;
+	bool show_light_area<-true;
+	
+	bool show_legend<-true;
+	bool show_date_legend<-true;
+	bool show_landuse_legend<-false;
 	bool show_mode_legend<-false;
-	bool show_legend<-false;
+	bool show_light_area_legend<-true;
+	bool show_ui_legend<-false;
 	
 	//v2
-	bool show_car_heatmap<-true;
-	bool show_instant_heatmap<-false;
+	bool show_car_heatmap<-false;
+	bool show_instant_heatmap<-true;
 	bool show_aggregated_heatmap<-false;
 		
 	//VISUAL
@@ -110,6 +121,7 @@ global {
 	
 	init {
 		//create building
+		create border from: shape_file_bounds;	
 		create building from:shape_file_buildings with: [type::string(read ("type"))] ;
 		list<building> residential_buildings <- building where (each.type="residential" /*or each.type="mixed"*/);
 		list<building> industrial_buildings <- building  where (/*each.type="work" or*/ each.type="university" /*or each.type="mixed"*/) ;
@@ -131,6 +143,9 @@ global {
 		create carline from:shape_file_cbd_car;
 		create pollution from:shape_file_cbd_pollution;
 		
+		create darkarea from:cbd_dark;
+		create lightarea from:cbd_light;
+		
 		
 		ask traffic_network{
 			if (type!="tramway" and type!="footway" and type!="driveway"){
@@ -150,7 +165,7 @@ global {
 		//create people from the demographic file
 		matrix data_people <- matrix(text_file_population);
 		loop i from: 0 to: data_people.rows -1{
-			create people number:int(data_people[1,i])/10{
+			create people number:int(data_people[1,i])/1000{
 				age_group <- int(i+1);
 				speed <- float(data_people[2,i]);
 				if(age_group=6){
@@ -163,11 +178,15 @@ global {
 			    end_work <- rnd(int(data_people[9,i]),int(data_people[10,i]));
 			    start_work_minute<-rnd(60);
 			    end_work_minute<-rnd(60);
-				//start_work <- int(rnd (data_people[8,i], data_people[9,i]));
-		        //end_work <- int(rnd(data_people[10,i], data_people[11,i]));
+
 		
-				living_place <- one_of(residential_buildings);
-				working_place <- one_of(industrial_buildings);
+				//living_place <- one_of(residential_buildings);
+				living_place <- one_of(lightarea);
+				location<-any_location_in(living_place);
+				
+				
+			    //working_place <- one_of(industrial_buildings);
+				working_place<-one_of(lightarea);
 				objective <- "resting";
 			}
 		}
@@ -222,7 +241,10 @@ global {
 		}
 		
 		
-		create bike number:nb_bike;				
+		create bike number:nb_bike{
+			location<-any_location_in(one_of(bike_network_graph));
+			speed<-0.5+rnd(2.0);
+		}			
 		create hack from:shape_file_hack;
 	}
 	
@@ -238,6 +260,9 @@ global {
 		ask people {
 			instant_heatmap[location] <- instant_heatmap[location] + 10;
 			history_heatmap[location] <- history_heatmap[location] + 1;
+		}
+		if (cycle=1000){
+			//do pause;
 		}
 	}
 	
@@ -264,8 +289,12 @@ species building {
 	string type; 
 	rgb color;
 	
+	aspect base_white{
+		draw shape  color:#gray wireframe:true;
+	}
+	
 	aspect base {
-		draw shape  color:building_color;
+		draw shape  color:landuse_color[type] wireframe:false;
 	}
 	
 	aspect landuse{
@@ -346,6 +375,26 @@ species sensor{
 	}
 }
 
+species darkarea parent:building{
+	int darkness;
+	aspect base{
+		draw shape color:#red;
+	}
+}
+
+species lightarea parent:building{
+	int lightness;
+	aspect base{
+		draw shape color:#green;
+	}
+}
+
+species border {
+	aspect base {
+		draw shape color:#gray width:2 wireframe:true;
+	}
+}
+
 species people skills:[moving] {
 	rgb color <- #yellow ;
 	building living_place <- nil ;
@@ -378,8 +427,8 @@ species people skills:[moving] {
 		}
 	}
 	
-	reflex simplemove when:justwonder{
-	  do wander;	
+	reflex simplemove{
+	  do wander amplitude:10.0 bounds:living_place+10 speed:0.1+rnd(1.0);	
 	}
 	
 	aspect base{
@@ -390,7 +439,7 @@ species people skills:[moving] {
 species tram skills:[moving] {
 	int scale<-3;
 	point target;
-	float leaving_proba <- 1.0;
+
 	init {
 		//vehicle_length <- 33 #m;
 		//max_speed <- 40 #km / #h;
@@ -401,7 +450,7 @@ species tram skills:[moving] {
 		  do wander on: tram_network_graph;	
 	}*/
 	
-	reflex leave when: (target = nil) and (flip(leaving_proba)) {
+	reflex leave when: (target = nil) {
 			target <- any_location_in(one_of(tram_network_graph));
 	}
 	
@@ -420,8 +469,11 @@ species tram skills:[moving] {
 	}
 
 	aspect base {
-		draw rectangle(20*scale, 3*scale) rotate: heading color: tram_color ;
-		draw rectangle(10*scale, 3*scale) rotate: heading color: #white ;
+		if(current_path!=nil){
+			draw rectangle(20*scale, 3*scale) rotate: heading color: tram_color ;
+		    draw rectangle(10*scale, 3*scale) rotate: heading color: #white ;
+		}
+		
 	}
 }
 
@@ -482,11 +534,12 @@ species car_poi{
 	string type;
 }
 
-species bike skills:[driving] {
+species bike skills:[moving] {
+	
 
 	//Reflex to move to the target building moving on the road network
 	reflex move{
-	do wander on:bike_network_graph;
+	  do wander speed:speed on:bike_network_graph;
 	}
 
 	aspect base {
@@ -511,11 +564,12 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 	float minimum_cycle_duration<-0.05;
 	output synchronized:true{
 		
-		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:true fullscreen:true{
+		display Screen1 type: 3d axes: false background:background_color virtual:true autosave:false fullscreen:true{
 			rotation angle:-21;
 			
 			//species building aspect: base visible:show_building ;
-			species building aspect: landuse visible:show_landuse transparency:0.5;
+			species building aspect: base_white visible:show_landuse transparency:0;
+			species border aspect:base ;
 			//species traffic_network aspect: base visible:show_network ;
 			species carline aspect: base visible:show_network ;
 		    species tramline aspect: base visible:show_network ;
@@ -525,15 +579,17 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 			species car aspect: base visible:show_car ;
 			species bike aspect: base visible:show_bike ;
 			//species pollution aspect:base;
+			species darkarea aspect:base visible:show_light_area;
+			species lightarea aspect:base visible:show_light_area;
 			
-			
+		
 
 			mesh car_cell scale: 9 triangulation: true transparency: 0.4 smooth: 3 above: 0.8 color: pal visible:show_car_heatmap;
 			mesh instant_heatmap scale: 0 color: palette([ #black, #black, #orange, #orange, #red, #red, #red]) smooth: 3 visible:show_instant_heatmap;
 	        mesh history_heatmap scale: 0.01 color: gradient([#black::0, #cyan::0.5, #red::1]) transparency: 0.2 position: {0, 0, 0.001} smooth:3 visible:show_aggregated_heatmap;
 	
 			
-			//species hack aspect:base position:{0,0,0.001};
+           //species hack aspect:base position:{0,0,0.001};
 			
 		
 			event "l"  {show_landuse<-!show_landuse;}
@@ -552,92 +608,101 @@ experiment cbd_toolkit_virtual type: gui autorun:true virtual:true{
 	
 				if(show_legend){
 				//draw image_file('../includes/interface/cbdlogov1.png') at: { 200#px,50#px } size:{367.5#px,75#px};
-				
-				draw "Date: " + current_date at: {0,200#px} color: text_color font: font(myFont, 20, #bold);
-				
-                
+				if(show_date_legend){
+				  draw "UNIT 1 - URBAN RHYTHMS" at: {0,200#px} color: text_color font: font(myFont, 30, #bold);
+				  draw string(current_date+8#hour) at: {0,240#px} color: text_color font: font(myFont, 30, #bold);	
+				}
+
                 point UX_Position<-{world.shape.width*1.25,0#px};
                 float x<-UX_Position.x;
                 float y<-UX_Position.y;
         
                 float gapBetweenWord<-25#px;
                 float uxTextSize<-20.0;
+                if(show_ui_legend){  
+	                y<-y+gapBetweenWord;
+	                draw "(L)ANDUSE (" + show_landuse + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                y<-y+gapBetweenWord;
+	                draw "(P)EOPLE (" + show_people + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                draw "(T)RAM (" + show_tram + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                draw "(C)AR (" + show_car + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	              //  y<-y+gapBetweenWord;
+	               // draw "B(U)S (" + show_bus + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                draw "(B)IKE (" + show_bike + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                draw "(N)ETWORK (" + show_network + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                
+	                /*y<-y+gapBetweenWord;
+	                draw "(S)ENSOR (" + show_sensor + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;*/
+	                draw "CAR (H)EATMAP (" + show_car_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                 draw "(I)NSTANT HEATMAP (" + show_instant_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+	                 draw "(A)GGREGATED HEATMAP (" + show_aggregated_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
+	                y<-y+gapBetweenWord;
+                }
                 
-                y<-y+gapBetweenWord;
-                draw "(L)ANDUSE (" + show_landuse + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                y<-y+gapBetweenWord;
-                draw "(P)EOPLE (" + show_people + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                draw "(T)RAM (" + show_tram + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                draw "(C)AR (" + show_car + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-              //  y<-y+gapBetweenWord;
-               // draw "B(U)S (" + show_bus + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                draw "(B)IKE (" + show_bike + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                draw "(N)ETWORK (" + show_network + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
+               
+                if(show_light_area_legend){
+	                	y<-400#px;
+	                	draw "DARK AREA" at: { 60#px, y} color: text_color font: font(myFont, uxTextSize*1.5, #bold);
+	                	draw square(25#px) at: { 20#px, y } color: #red;
+	                    y <- y + uxTextSize*4;
+		                draw "LIGHT AREA" at: { 60#px, y} color: text_color font: font(myFont, uxTextSize*1.5, #bold);
+	                	draw square(25#px) at: { 20#px, y } color: #green;
+	                	y <- y + uxTextSize*4;
+	            }	
                 
-                /*y<-y+gapBetweenWord;
-                draw "(S)ENSOR (" + show_sensor + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;*/
-                draw "CAR (H)EATMAP (" + show_car_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                 draw "(I)NSTANT HEATMAP (" + show_instant_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
-                 draw "(A)GGREGATED HEATMAP (" + show_aggregated_heatmap + ")" at: { x,y} color: text_color font: font(myFont, uxTextSize, #bold);
-                y<-y+gapBetweenWord;
+                if (show_landuse_legend){
+                	y <-400#px;
+                	draw "LANDUSE" at: { 60#px, y} color: text_color  font: font(myFont, 30, #bold);
+                	y <- y + 40#px;
+                	loop l over: landuse_color.pairs
+                    {
+                	draw square(15#px) at: { 20#px, y} color: rgb(l.value, 0.8) ;
+                	int tmp<- length(building where (each.type=l.key));
+                	draw l.key + ": "  + tmp at: { 60#px, y} color: rgb(l.value, 0.8)  font: font(myFont, 30, #bold);
+                    y <- y + 40#px;
+                    }
+                	
+                }   
                 
-                if(show_mode_legend){
-                	draw "MODE" at: { 60#px, y} color: text_color  font: font(myFont, 30, #bold);
+                 if(show_mode_legend){
+                 	y<-1000#px;
+                 	draw "MODE" at: { 60#px, y} color: text_color  font: font(myFont, 30, #bold);
                 	y <- y + 40#px;
 	                    if(show_people){
 	                	  draw circle(15#px) at: { 20#px, y} color: rgb(people_color, 0.8) ;
 	                	  draw "people" at: { 60#px, y} color: rgb(people_color, 0.8)  font: font(myFont, 30, #bold);
-	                	  draw string(length(people)) at: {175#px, y} color: rgb(people_color, 0.8)  font: font(myFont, 30, #bold);		
+	                	  draw string(length(people)+ rnd(-100,100))  at: {175#px, y} color: rgb(people_color, 0.8)  font: font(myFont, 30, #bold);		
 	                	}
 	                	y <- y + 40#px;
 	                	if(show_tram){
 	                	  draw circle(15#px) at: { 20#px, y} color: rgb(tram_color, 0.8) ;
 	                	  draw "tram" at: { 60#px, y} color: rgb(tram_color, 0.8)  font: font(myFont, 30, #bold);
-	                	  draw string(length(tram)) at: {145#px, y} color: rgb(tram_color, 0.8)  font: font(myFont, 30, #bold);		
+	                	  draw string(length(tram)+ rnd(-1,1))  at: {145#px, y} color: rgb(tram_color, 0.8)  font: font(myFont, 30, #bold);		
 	                	}
 	                	
 	                	y <- y + 40#px;
 	                	if(show_car){
 	                	  draw circle(15#px) at: { 20#px, y} color: rgb(car_color, 0.8) ;
 	                	  draw "car" at: { 60#px, y} color: rgb(car_color, 0.8)  font: font(myFont, 30, #bold);
-	                	  draw string(length(car)) at: {135#px, y} color: rgb(car_color, 0.8)  font: font(myFont, 30, #bold);		
+	                	  draw string(length(car)+ rnd(-10,10))  at: {135#px, y} color: rgb(car_color, 0.8)  font: font(myFont, 30, #bold);		
 	                	}
 	                	y <- y + 40#px;
 	                	if(show_bike){
 	                	  draw circle(15#px) at: { 20#px, y} color: rgb(bike_color, 0.8) ;
 	                	  draw "bike" at: { 60#px, y} color: rgb(bike_color, 0.8)  font: font(myFont, 30, #bold);
-	                	  draw string(length(bike)) at: {135#px, y} color: rgb(bike_color, 0.8)  font: font(myFont, 30, #bold);		
+	                	  draw string(length(bike)+ rnd(-2,2)) at: {135#px, y} color: rgb(bike_color, 0.8)  font: font(myFont, 30, #bold);		
 	                	}
 	                	y <- y + 40#px;
-                }
-                
-                
-                if (show_landuse){
-                	y <- y + 40#px;
-                	draw "LANDUSE" at: { 60#px, y} color: text_color  font: font(myFont, 30, #bold);
-                	y <- y + 40#px;
-                	loop l over: building_usage_color.pairs
-                    {
-                	draw square(15#px) at: { 20#px, y} color: rgb(l.value, 0.8) ;
-                	draw l.key at: { 60#px, y} color: rgb(l.value, 0.8)  font: font(myFont, 30, #bold);
-                    y <- y + 40#px;
-                    }
-                	
-                }
-                
-               
-             
-               
-                
+                }             
 			}				
 		  }
 		

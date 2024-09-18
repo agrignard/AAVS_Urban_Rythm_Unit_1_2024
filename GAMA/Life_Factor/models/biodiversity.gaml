@@ -21,8 +21,9 @@ global{
 	bool show_bird<-false;
 	bool show_bird_gate<-false;
 	bool show_green<-false;
-	bool show_tree<-false;
-	bool show_tree_family<-false;
+	bool show_tree<-true;
+
+	
 	
 	map<string,rgb> uselif_color<-["61+ years"::rgb(1,40,33), "31-60 years"::rgb(1,75,62), "21-30 years"::rgb(0,104,86), "11-20 years"::rgb(0,135,111), 
     "6-10 years (>50% canopy)"::rgb(0,195,160), "6-10 years (<50% canopy)"::rgb(30,233,182),"1-5 years (<50% canopy)"::rgb(0,255,209),"<1 year"::rgb(173,250,240),''::rgb(255,255,255)];
@@ -31,7 +32,15 @@ global{
 	map<string,string> family_int_to_group<- ["1"::"Broadleaf Trees ","2"::"Coniferous Trees ", "3"::"Palm and Tropical Trees ","4"::"Flower Trees "];
  
 	
-	
+	map<string, rgb> bird_color <- [
+    "Australian White Ibis"::rgb(34, 139, 34), // Forest Green
+    "Silver Gull"::rgb(135, 206, 235), // Sky Blue
+    "Rock Dove"::rgb(139, 69, 19), // Earth Brown
+    "Little Raven"::rgb(0, 128, 128), // Ocean Teal
+    "Rainbow Lorikeet"::rgb(173, 223, 173), // Moss Green
+    "Spotted Dove"::rgb(194, 178, 128), // Sand Beige
+    "Noisy Miner"::rgb(70, 130, 180) // River Blue
+];
 
 	
 	action initBiodiversityModel{
@@ -47,6 +56,7 @@ global{
 	reflex createBird when:(cycle mod 20 =0){
 		ask bird_gate{
 			create bird number:1{
+				type<-bird_color.keys[rnd(6)];
 				speed<-1.0+rnd(5.0);
 				location <-myself.location;
 				shape<-triangle(20);
@@ -69,6 +79,7 @@ species bird skills:[moving]{
 	bool hungry<-false;
 	bool full<-false;
 	float speed;
+	string type;
 	
 	
 	reflex checkGreen when:(hungry=false and full=false){
@@ -76,6 +87,11 @@ species bird skills:[moving]{
 		if (length(potentialGreen)>0){
 			my_green_space<-first(potentialGreen);
 			my_target <-my_green_space.location;
+			if(flip(0.5)){
+				list<green> potentialTree <- tree at_distance 200;
+				my_green_space<-first(potentialTree);
+				my_target <-first(my_green_space).location;
+			}
 			color<-#purple;	
 			hungry<-true;
 		}
@@ -83,7 +99,9 @@ species bird skills:[moving]{
 	
 	reflex move{
 		if(my_target!=nil){
-			do goto target:my_target speed:speed;// on:bird_channel;
+			do goto target:my_target speed:speed;
+			//do wander amplitude:60.0;
+			//heading<-heading-180;
 		}else{
 			do die;
 		}
@@ -105,7 +123,10 @@ species bird skills:[moving]{
 	}
 	
 	aspect base{
-		draw triangle(20) rotate: heading+90 color:hungry ? #purple : (full ? model_color["bio_green"] : model_color["bio_red"]) border:#black;
+		draw triangle(25) rotate: heading+90 color:hungry ? #purple : (full ? model_color["bio_green"] : model_color["bio_red"]) border:#black;
+	}
+	aspect family{
+		draw triangle(25) rotate: heading+90 color:bird_color[type] border:#black;
 	}
 }
 
@@ -135,7 +156,7 @@ species green{
 }
 
 
-species tree{
+species tree parent:green{
 	rgb color;
 	string family;
 	int year_plant;
@@ -146,17 +167,17 @@ species tree{
 	
 	aspect base{
 		if(cycle+1899>year_plant){
-			draw circle(10) color:tree_color;
+			draw circle(10) color:tree_color border:tree_color-10;
 		}
 		
 	}
 	
 	aspect useful_lif{
-	   draw circle(5+diameter_b*0.25) color:uselif_color[useful_lif];
+	   draw circle(5+diameter_b*0.25) color:uselif_color[useful_lif] border:uselif_color[useful_lif]-75;
 	}
 	aspect family{
 		if (family !=nil){
-		  draw circle(5+diameter_b*0.25) color:group_to_color[group];	
+		  draw circle(5+diameter_b*0.25) color:group_to_color[group] border:group_to_color[group]-75;	
 		}
 	}
 }

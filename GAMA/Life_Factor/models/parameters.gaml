@@ -19,7 +19,7 @@ global{
   file cbd_trees <- file("../includes/GIS/cbd_trees.shp");	
 		
 	
-  map<string,rgb> model_color<-["human"::rgb(255,218,136),"shadow"::rgb(99,98,98), "water"::rgb(70,192,231), "wind"::rgb(26, 205,202), "biodiversity"::rgb(151,160,95), "bio_red"::rgb(255,83,73), "bio_green"::rgb(26,205,202)];	
+  map<string,rgb> model_color<-["human"::rgb(255,218,136),"shadow"::rgb(99,98,98), "water"::rgb(70,192,231), "wind"::rgb(36, 215,212),"global_wind"::rgb(6, 285,182), "biodiversity"::rgb(151,160,95), "bio_red"::rgb(255,83,73), "bio_green"::rgb(26,205,202), "bio_purple"::#purple];	
 
   map<string,rgb> landuse_color<-["Commercial Accomodation"::rgb(232, 199, 170),"Community Use"::rgb(175, 165, 202), 
 	"Educational/Research"::rgb(227, 183, 183), "Entertainment/Recreation - Indoor"::rgb(190, 213, 186), "Equipment Installation"::rgb(205, 222, 188),
@@ -54,6 +54,9 @@ species building {
 	
 	aspect wireframe{
 		draw shape color:color border:#darkgray wireframe:true;
+	}
+	aspect wireframe_wind{
+		draw shape color:model_color["wind"] border:model_color["wind"] wireframe:false;
 	}
 }
 
